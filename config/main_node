@@ -1,0 +1,110 @@
+-- 主节点配置
+
+thread = 8 --启用多少个工作线
+cpath = "./skynet/cservice/?.so" --用C编写的服务模块的位置
+bootstrap = "snlua bootstrap" --启动的第一个服务
+--bootstrap配置
+start = "main" --主服务
+harbor = 0 --不使用主从节点模式
+
+--lua配置
+lualoader = "./skynet/lualib/loader.lua"
+
+-- lua服务
+luaservice = "./tool/service/startup/?.lua;" ..			-- 起服相关
+			"./tool/service/basic/?/?.lua;" ..			-- 基础设施功能（定时器、集群、数据库等等）
+			"./game/service/?/?.lua;" ..				-- 游戏玩法逻辑服务
+			"./skynet/service/?.lua;" ..				-- skynet内置服务
+			"./skynet/examples/?.lua;" ..
+			"./skynet/test/?.lua;"
+
+lua_path = "./lualib/?.lua;" ..
+			"./skynet/lualib/?.lua;" ..
+			"./skynet/lualib/?/init.lua;" ..
+			"./game/global/?.lua;" ..
+			"./game/global/findpath/?.lua;"
+
+lua_cpath = "./luaclib/?.so;" .. "./skynet/luaclib/?.so;" .. "./tool/cplugins-so/?.so"
+
+--后台模式（必要时开启）
+-- daemon = "./log/skynet.pid"
+-- logger = "./log/skynet_error.log"
+
+profile = true		-- 默认位true的
+profile_cmd = true	-- 细化指令检测
+
+apreload = "tool/luaplugins/apreload.lua"  -- 目的：main完成必要的操作后 才对后续服务开放加载节点数据
+preload = "tool/luaplugins/preload.lua"
+-- game_preload = ... 	-- 内部设置
+
+------------------ 节点信息 ------------------
+cluster_no = 1				-- 集群编号
+server_id = 1
+nowaiting = true			-- 不挂起【其中利弊还未考量】
+gcluster_auths = "!#df@&%s1idf"
+is_testserver = true		-- 测试服
+
+node_name = "user"
+
+gcluster_padding_warn = 100	-- 分包数量警告
+
+------------------ 数据库 ------------------
+database_cachecnt = 100		-- 每个数据库链接缓存数据数量
+database_num = 10			-- 每个链接数据库的个数
+database_info = [[{
+	dbhost = "127.0.0.1",
+	dbport = 3306,
+	dbname = "server1",
+	dbuser = "root",
+	dbpasswd = "root",
+}]]
+
+data_dirname	= "main"
+
+centerdatadb_info = [[{
+	dbhost = "127.0.0.1",
+	dbport = 3306,
+	dbname = "centerdata",
+	dbuser = "root",
+	dbpasswd = "root",
+}]]
+
+mongo_log_db = [[{
+	host = "127.0.0.1",
+	port = 27020,
+	dbname = "server1",
+}]]
+
+
+dbcell_num = 3
+
+------------------ 日志 ------------------
+log_stdin = true		-- true:控制台打印日志
+
+------------------ 后台管理端口 ------------------
+mcs_port = 40001
+
+wsocket_port = 30001
+max_wscoket_count = 1
+gateway_num = 1		-- 无状态网关实例数（>1时端口依次为 wsocket_port + (i-1)*10）
+
+------------------ 玩家逻辑服 agent ------------------
+agent_max_player = 50	-- 单个 agent 实例最大容纳玩家数
+agent_default_num = 8	-- 开服默认启动的 agent 实例数（底座编号1~N，不参与缩容回收）
+------------------ openssl ------------------
+-- enablessl = true
+
+-- 生成私钥
+-- openssl genrsa -out server-key.pem 2048
+
+-- 生成自签名证书
+-- openssl req -new -x509 -key server-key.pem -out server-cert.pem -days 365
+certfile = "./tool/openssl_pem/server-cert.pem"
+keyfile = "./tool/openssl_pem/server-key.pem"
+
+------------------ sharedata info ------------------
+sharedata_mem_wanning = true
+
+
+------------------ log color ------------------
+-- log_color_mode = false 	-- true为真色彩模式(默认)、false为标准色模式
