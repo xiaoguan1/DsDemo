@@ -17,6 +17,7 @@ local nodename = assert(skynet.getenv("node_name"))
 local cluster_no = tonumber(assert(skynet.getenv("cluster_no")))
 local CLUSTER_NAME_FMT = assert(CLUSTER_NAME_FMT)
 local SERVICE_CLUSTERNAME = assert(SERVICE_CLUSTERNAME)
+local ALL_SERVICE_MAP = assert(ALL_SERVICE_MAP)
 
 local MISC = Import("game/global/rpc/misc.lua")
 
@@ -246,4 +247,25 @@ function GetProxyByServiceName(serviceName, ...)
 		assert(SERVICE_CLUSTERNAME[serviceName] and SERVICE_CLUSTERNAME[serviceName][serverId])
 	end
 	return GetProxy(namedData.named, clusterName, prototype)
+end
+
+-- 获取集群内唯一服务的代理（如 jlogin）：按 SERVICE_CLUSTERNAME 反查宿主节点
+-- SERVICE_CLUSTERNAME 仅登记实际启动该服务的节点，因此条目必须恰好为 1
+function GetUniqueProxy(serviceName, prototype)
+	local namedData = assert(ALL_SERVICE_MAP[serviceName], "not in ALL_SERVICE_MAP: " .. serviceName)
+	assert(namedData.unique, serviceName .. " is not unique service")
+
+	local sId2name = SERVICE_CLUSTERNAME[serviceName]
+	local hostServerId, clustername
+	if sId2name then
+		for serverId, cn in pairs(sId2name) do
+			assert(not hostServerId, sformat("%s start on multi node[%s] and [%s]", serviceName, tostring(hostServerId), tostring(serverId)))
+			hostServerId, clustername = serverId, cn
+		end
+	end
+	if not clustername then
+		skynet.error("unique service:" .. serviceName .. " not start on any node")
+		return
+	end
+	return GetProxy(namedData.named, clustername, prototype or "lua")
 end

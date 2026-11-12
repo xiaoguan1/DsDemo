@@ -114,7 +114,8 @@ fi
 
 mysql -hlocalhost -uroot -proot $dbname << EOF 2>/dev/null
 insert into server_config(cluster_no, server_id, node_name, ipport, jlogin_ipport, is_start_jlogin, is_start_display, is_start_example, is_start_center) values
-(1, 1, "user", "127.0.0.1:32526", "127.0.0.1:32525", 1, 0, 55001, 0),
-(1, 55001, "cross", "127.0.0.1:32527", "", 0, 1, 1, 0);
+(1, 1, "user", "127.0.0.1:32526", "127.0.0.1:32525", 55002, 0, 55001, 0),
+(1, 55001, "cross", "127.0.0.1:32527", "", 0, 1, 1, 0),
+(1, 55002, "jlogin", "127.0.0.1:32525", "", 1, 0, 0, 0);
 EOF
 [ $? -eq 0 ] && echo "insert table: server_config ok" || echo "insert table: server_config error";

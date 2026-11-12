@@ -41,6 +41,35 @@ local function _GetDb()
 	return true, db
 end
 
+-- 校验 unique 服务的集群唯一性：有且仅有一个节点本地启动(is_start_xxx == 1)，
+-- 其余节点的值必须是 0（不启动）或等于宿主节点 server_id（指向宿主）
+local function checkUniqueSvr(dbRes)
+	for svrname, svrData in pairs(ALL_SERVICE_MAP) do
+		if svrData.unique then
+			local hostServerId
+			for _, res in ipairs(dbRes) do
+				local val = res["is_start_" .. svrname]
+				if val == 1 then
+					if hostServerId then
+						return false, sformat("unique service[%s] start on multi node[%d] and [%d]", svrname, hostServerId, res.server_id)
+					end
+					hostServerId = res.server_id
+				end
+			end
+			if not hostServerId then
+				return false, sformat("unique service[%s] not start on any node", svrname)
+			end
+			for _, res in ipairs(dbRes) do
+				local val = res["is_start_" .. svrname]
+				if val ~= 0 and val ~= 1 and val ~= hostServerId then
+					return false, sformat("unique service[%s] node[%d] val[%s] error, host is node[%d]", svrname, res.server_id, tostring(val), hostServerId)
+				end
+			end
+		end
+	end
+	return true
+end
+
 local selectSql_1 = "select * from server_config where cluster_no = %d;"
 local selectSql_2 = "select * from server_config where cluster_no = %d and server_id = %d;"
 
@@ -68,6 +97,11 @@ local function getAllNodeData(db)
 		return false, sformat("centerdatabase server_config node_name error! %s ~= %s", hostDbRes.node_name, nodename)
 	end
 
+	local isOk, errMsg = checkUniqueSvr(dbRes)
+	if not isOk then
+		return false, errMsg
+	end
+
 	local SERVER_CONFIG = {}	-- 全部区服的配置，包括自己
 
 	local startSvc = {}
@@ -84,7 +118,8 @@ local function getAllNodeData(db)
 		if isOk then
 			local svriceName = string.sub(key, eIdx + 1)
 			if val == 1 then
-				if not ADHOC_SERVICE_MAP[nodename][svriceName] then
+				local nodeAdhocMap = ADHOC_SERVICE_MAP[nodename]
+				if not nodeAdhocMap or not nodeAdhocMap[svriceName] then
 					return false, sformat("ADHOC_SERVICE_MAP [%s] [%s] not find!", nodename, svriceName)
 				end
 				startSvc[svriceName] = selfIpPort
@@ -114,7 +149,8 @@ local function getAllNodeData(db)
 			if isOk then
 				local svriceName = string.sub(key, eIdx + 1)
 				if val == 1 then
-					if not ADHOC_SERVICE_MAP[config.node_name][svriceName] then
+					local nodeAdhocMap = ADHOC_SERVICE_MAP[config.node_name]
+					if not nodeAdhocMap or not nodeAdhocMap[svriceName] then
 						return false, sformat("ADHOC_SERVICE_MAP22 [%s] [%s] not find!", config.node_name, svriceName)
 					end
 					startSvc[svriceName] = config.ipport

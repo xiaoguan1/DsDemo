@@ -1,6 +1,0 @@
-[2026-11-12 18:45:09] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
-[2026-11-12 18:45:09] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
-[2026-11-12 18:48:01] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
-[2026-11-12 18:48:01] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
-[2026-11-12 18:48:24] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
-[2026-11-12 18:48:24] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600

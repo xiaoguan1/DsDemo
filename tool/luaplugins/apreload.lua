@@ -22,6 +22,9 @@ end
 function IsCross()
 	return HOST_ENV.nodename == CROSS_NODE	-- 一般跨服节点
 end
+function IsJlogin()
+	return HOST_ENV.nodename == JLOGIN_NODE	-- 仲裁登录节点
+end
 
 HOST_ENV = load("return " .. assert(skynet_getenv("host_env")))()
 SELF_IPPORT = assert(HOST_ENV.ipport)
@@ -34,13 +37,16 @@ local function gen_serice_clutsername()
 		SERVICE_CLUSTERNAME[servicename] = {}
 	end
 
+	-- 节点类型 -> 启动服务顺序表（新增节点类型在此登记）
+	local NODE_SERVICE_ORDER = {
+		[USER_NODE] = START_USER_SERVICE,
+		[CROSS_NODE] = START_CROSS_SERVICE,
+		[JLOGIN_NODE] = START_JLOGIN_SERVICE,
+	}
+
 	for serverId, config in pairs(SERVER_CONFIG) do
-		local serviceOrder
-		if config.nodename == USER_NODE then
-			serviceOrder = START_USER_SERVICE
-		elseif config.nodename == CROSS_NODE then
-			serviceOrder = START_CROSS_SERVICE
-		else
+		local serviceOrder = NODE_SERVICE_ORDER[config.nodename]
+		if not serviceOrder then
 			skynet.error("unknown node: " .. config.nodename)
 		end
 

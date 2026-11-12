@@ -36,10 +36,11 @@ STOP_SH=$CURDIR/script/stop.sh
 HOTUPDATE_SH=$CURDIR/script/hot_update.sh
 
 GAME_CONFIG=./config/main_node	# 游戏服启动配置
+JLOGIN_CONFIG=./config/jlogin_node	# 仲裁登录节点启动配置
 
 
 echo "选择题:"
-select w in 重启游戏服 启动游戏服 关闭游戏服 热更游戏服 启动跨服 编译并启动游戏 编译协议
+select w in 重启游戏服 启动游戏服 关闭游戏服 热更游戏服 启动跨服 启动jlogin 重启jlogin 编译并启动游戏 编译协议
 do
 	case $w in
 		启动游戏服)
@@ -52,6 +53,15 @@ do
 			;;
 		启动跨服)
 			./skynet/skynet ./config/cross_node &
+			break
+			;;
+		启动jlogin)
+			sh $START_SH $JLOGIN_CONFIG
+			break
+			;;
+		重启jlogin)
+			sh $STOP_SH $JLOGIN_CONFIG
+			sh $START_SH $JLOGIN_CONFIG
 			break
 			;;
 		重启游戏服)
