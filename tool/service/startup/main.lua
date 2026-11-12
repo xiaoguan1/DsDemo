@@ -55,11 +55,8 @@ skynet.start(function ()
 					abort(string.format("start service[%s] fail", svrname))
 				end
 				local named = NORMAL_SERVICE_MAP[nodename][svrname].named
-				if i == 1 then
-					skynet.name(named, id)
-				else
-					skynet.name(named .. i, id)
-				end
+				local agentName = (i == 1) and named or (named .. i)
+				skynet.name(agentName, id)
 			end
 		else
 			local id = skynet.newservice(svrname)

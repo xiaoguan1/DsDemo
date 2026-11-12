@@ -81,11 +81,6 @@ START_CROSS_SERVICE = {
 		"gcluster"
 	},
 
-	-- -- 一般服务
-	-- normal = {
-	-- 	"....",
-	-- },
-
 	-- 相对自由的服务，可根据数据库配置决定是否启动
 	adhoc = {
 		"display",

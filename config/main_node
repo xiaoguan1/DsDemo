@@ -89,8 +89,8 @@ max_wscoket_count = 1
 gateway_num = 1		-- 无状态网关实例数（>1时端口依次为 wsocket_port + (i-1)*10）
 
 ------------------ 玩家逻辑服 agent ------------------
-agent_max_player = 50	-- 单个 agent 实例最大容纳玩家数
-agent_default_num = 8	-- 开服默认启动的 agent 实例数（底座编号1~N，不参与缩容回收）
+agent_max_player = 50	-- 单个 worker 实例最大容纳玩家数（管理者 alloc 按此负载均衡与扩容）
+agent_default_num = 8	-- 开服默认启动的 agent 实例数（实例1为管理者，2~N为常驻worker底座；编号>N的空worker由管理者每10秒回收，登录时自动扩容）
 ------------------ openssl ------------------
 -- enablessl = true
 
