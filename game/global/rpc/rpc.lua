@@ -49,6 +49,7 @@ local function getClusterName(service, serverId)
 	if not service or not serverId then
 		return
 	end
+	print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
 	local sId2name = SERVICE_CLUSTERNAME[service]
 	if type(sId2name) == "table" then
 		return sId2name[serverId]

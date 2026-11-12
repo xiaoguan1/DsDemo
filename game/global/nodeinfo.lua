@@ -85,7 +85,7 @@ local function getAllNodeData(db)
 			local svriceName = string.sub(key, eIdx + 1)
 			if val == 1 then
 				if not ADHOC_SERVICE_MAP[nodename][svriceName] then
-					return false, sformat("ADHOC_SERVICE_MAP11 [%s] [%s] not find!", nodename, svriceName)
+					return false, sformat("ADHOC_SERVICE_MAP [%s] [%s] not find!", nodename, svriceName)
 				end
 				startSvc[svriceName] = selfIpPort
 			elseif val ~= 0 then

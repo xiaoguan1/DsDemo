@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local nodename = assert(skynet.getenv("node_name"))
 require "skynet.manager"
 
 function abort(msg)
@@ -34,5 +35,18 @@ skynet.start(function ()
 		skynet.name(BASIC_SERVICE_MAP[svrname].named, id)
 	end
 
+	local startService = hostConfig.start_service
+	local function startOterSvr(nodeSvrSeq)
+		for _, svrname in ipairs(nodeSvrSeq) do
+			if startService[svrname] == SELF_IPPORT then
+				local id = skynet.newservice(svrname)
+				if not id then
+					abort(string.format("start service[%s] fail", svrname))
+				end
+				skynet.name(ADHOC_SERVICE_MAP[nodename][svrname].named, id)
+			end
+		end
+	end
+	startOterSvr(START_CROSS_SERVICE.adhoc)
 
 end)
