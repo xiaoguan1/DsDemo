@@ -54,6 +54,11 @@ local function checkUniqueSvr(dbRes)
 						return false, sformat("unique service[%s] start on multi node[%d] and [%d]", svrname, hostServerId, res.server_id)
 					end
 					hostServerId = res.server_id
+					-- jlogin 在本节点启动时，监听地址 jlogin_ipport 必填
+					-- （提前校验，避免拖到 jlogin 服务启动时才 assert 崩溃）
+					if svrname == "jlogin" and (not res.jlogin_ipport or res.jlogin_ipport == "") then
+						return false, sformat("unique service[%s] node[%d] start but jlogin_ipport is empty", svrname, res.server_id)
+					end
 				end
 			end
 			if not hostServerId then

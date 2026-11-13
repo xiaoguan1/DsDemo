@@ -7,8 +7,6 @@ local setmetatable = setmetatable
 local assert = assert
 local error = error
 local type = type
-local string = string
-local sformat = string.format
 
 local SELF_CLUSTERNAME = assert(SELF_CLUSTERNAME)
 local SERVER_CONFIG = SERVER_CONFIG
@@ -244,28 +242,26 @@ function GetProxyByServiceName(serviceName, ...)
 	assert(namedData and namedData.named)
 	if clusterName ~= SELF_CLUSTERNAME then
 		-- 若是跨节点则检查对方节点是否启动了该服务（暂时不考虑normal的情况）
-		assert(SERVICE_CLUSTERNAME[serviceName] and SERVICE_CLUSTERNAME[serviceName][serverId])
+		local svrCluster = SERVICE_CLUSTERNAME[serviceName]
+		if ALL_SERVICE_MAP[serviceName] and ALL_SERVICE_MAP[serviceName].unique then
+			assert(svrCluster and svrCluster.hostId == serverId)
+		else
+			assert(svrCluster and svrCluster[serverId])
+		end
 	end
 	return GetProxy(namedData.named, clusterName, prototype)
 end
 
--- 获取集群内唯一服务的代理（如 jlogin）：按 SERVICE_CLUSTERNAME 反查宿主节点
--- SERVICE_CLUSTERNAME 仅登记实际启动该服务的节点，因此条目必须恰好为 1
+-- 获取集群内唯一服务的代理（如 jlogin）
+-- SERVICE_CLUSTERNAME 中 unique 服务登记为 { hostId = 服务器id, clusterName = 节点名 }
 function GetUniqueProxy(serviceName, prototype)
 	local namedData = assert(ALL_SERVICE_MAP[serviceName], "not in ALL_SERVICE_MAP: " .. serviceName)
 	assert(namedData.unique, serviceName .. " is not unique service")
 
-	local sId2name = SERVICE_CLUSTERNAME[serviceName]
-	local hostServerId, clustername
-	if sId2name then
-		for serverId, cn in pairs(sId2name) do
-			assert(not hostServerId, sformat("%s start on multi node[%s] and [%s]", serviceName, tostring(hostServerId), tostring(serverId)))
-			hostServerId, clustername = serverId, cn
-		end
-	end
-	if not clustername then
+	local data = SERVICE_CLUSTERNAME[serviceName]
+	if not data or not data.clusterName then
 		skynet.error("unique service:" .. serviceName .. " not start on any node")
 		return
 	end
-	return GetProxy(namedData.named, clustername, prototype or "lua")
+	return GetProxy(namedData.named, data.clusterName, prototype or "lua")
 end

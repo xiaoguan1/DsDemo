@@ -31,10 +31,24 @@ SELF_IPPORT = assert(HOST_ENV.ipport)
 SERVER_CONFIG = load("return " .. assert(skynet_getenv("server_config")))()
 SELF_CLUSTERNAME = sformat(CLUSTER_NAME_FMT, HOST_ENV.nodename, cluster_no, server_id)
 
+-- 服务 -> 宿主节点信息
+-- unique 服务（集群唯一）：{ hostId = 服务器id, clusterName = 节点名 }
+-- 多实例服务：{ [serverId] = 节点名 }
 SERVICE_CLUSTERNAME = {}
 local function gen_serice_clutsername()
-	for servicename in pairs(ALL_SERVICE_MAP) do
-		SERVICE_CLUSTERNAME[servicename] = {}
+	for servicename, svrData in pairs(ALL_SERVICE_MAP) do
+		if not svrData.unique then
+			SERVICE_CLUSTERNAME[servicename] = {}
+		end
+	end
+
+	local function regService(servicename, serverId, clustername)
+		local svrData = ALL_SERVICE_MAP[servicename]
+		if svrData and svrData.unique then
+			SERVICE_CLUSTERNAME[servicename] = { hostId = serverId, clusterName = clustername }
+		else
+			SERVICE_CLUSTERNAME[servicename][serverId] = clustername
+		end
 	end
 
 	-- 节点类型 -> 启动服务顺序表（新增节点类型在此登记）
@@ -53,12 +67,12 @@ local function gen_serice_clutsername()
 		if serviceOrder then
 			local clustername  = sformat(CLUSTER_NAME_FMT, config.nodename, cluster_no, serverId)
 			for _, servicename in pairs(serviceOrder.normal or {}) do
-				SERVICE_CLUSTERNAME[servicename][serverId] = clustername
+				regService(servicename, serverId, clustername)
 			end
 
 			for servicename, ipport in pairs(config.start_service) do
 				if ipport == config.ipport then
-					SERVICE_CLUSTERNAME[servicename][serverId] = clustername
+					regService(servicename, serverId, clustername)
 				end
 			end
 		end

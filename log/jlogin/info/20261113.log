@@ -2,3 +2,187 @@
 [2026-11-13 16:03:51] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
 [2026-11-13 16:05:13] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
 [2026-11-13 16:05:13] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 16:37:28] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 16:37:28] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 16:37:28] [INFO] [:00000008 jlogin_node] <tool/service/startup/start_node.lua:93> hostConfig {
+  ["server_id"]=55002,
+  ["ipport"]="127.0.0.1:32528",
+  ["start_service"]=
+    {
+      ["jlogin"]="127.0.0.1:32528",
+    },
+  ["nodename"]="jlogin",
+  ["jlogin_ipport"]="127.0.0.1:32525",
+} {
+  [1]=
+    {
+      ["server_id"]=1,
+      ["ipport"]="127.0.0.1:32526",
+      ["nodename"]="user",
+      ["start_service"]=
+        {
+          ["example"]="127.0.0.1:32527",
+          ["jlogin"]="127.0.0.1:32528",
+        },
+    },
+  [55002]=
+    {
+      ["server_id"]=55002,
+      ["ipport"]="127.0.0.1:32528",
+      ["start_service"]=
+        {
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["nodename"]="jlogin",
+      ["jlogin_ipport"]="127.0.0.1:32525",
+    },
+  [55001]=
+    {
+      ["server_id"]=55001,
+      ["ipport"]="127.0.0.1:32527",
+      ["nodename"]="cross",
+      ["start_service"]=
+        {
+          ["example"]="127.0.0.1:32527",
+          ["display"]="127.0.0.1:32527",
+        },
+    },
+}
+[2026-11-13 18:18:20] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 18:18:20] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 18:18:20] [INFO] [:00000008 jlogin_node] <tool/service/startup/start_node.lua:93> hostConfig {
+  ["server_id"]=55002,
+  ["start_service"]=
+    {
+      ["jlogin"]="127.0.0.1:32528",
+    },
+  ["jlogin_ipport"]="127.0.0.1:32525",
+  ["nodename"]="jlogin",
+  ["ipport"]="127.0.0.1:32528",
+} {
+  [1]=
+    {
+      ["server_id"]=1,
+      ["start_service"]=
+        {
+          ["example"]="127.0.0.1:32527",
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["nodename"]="user",
+      ["ipport"]="127.0.0.1:32526",
+    },
+  [55002]=
+    {
+      ["server_id"]=55002,
+      ["start_service"]=
+        {
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["jlogin_ipport"]="127.0.0.1:32525",
+      ["nodename"]="jlogin",
+      ["ipport"]="127.0.0.1:32528",
+    },
+  [55001]=
+    {
+      ["server_id"]=55001,
+      ["start_service"]=
+        {
+          ["display"]="127.0.0.1:32527",
+          ["example"]="127.0.0.1:32527",
+        },
+      ["nodename"]="cross",
+      ["ipport"]="127.0.0.1:32527",
+    },
+}
+[2026-11-13 18:23:28] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 18:23:28] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 18:23:28] [INFO] [:00000008 jlogin_node] <tool/service/startup/start_node.lua:93> hostConfig {
+  ["nodename"]="jlogin",
+  ["server_id"]=55002,
+  ["jlogin_ipport"]="127.0.0.1:32525",
+  ["start_service"]=
+    {
+      ["jlogin"]="127.0.0.1:32528",
+    },
+  ["ipport"]="127.0.0.1:32528",
+} {
+  [1]=
+    {
+      ["nodename"]="user",
+      ["server_id"]=1,
+      ["start_service"]=
+        {
+          ["jlogin"]="127.0.0.1:32528",
+          ["example"]="127.0.0.1:32527",
+        },
+      ["ipport"]="127.0.0.1:32526",
+    },
+  [55002]=
+    {
+      ["nodename"]="jlogin",
+      ["server_id"]=55002,
+      ["jlogin_ipport"]="127.0.0.1:32525",
+      ["start_service"]=
+        {
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["ipport"]="127.0.0.1:32528",
+    },
+  [55001]=
+    {
+      ["nodename"]="cross",
+      ["server_id"]=55001,
+      ["start_service"]=
+        {
+          ["example"]="127.0.0.1:32527",
+          ["display"]="127.0.0.1:32527",
+        },
+      ["ipport"]="127.0.0.1:32527",
+    },
+}
+[2026-11-13 18:26:33] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 18:26:33] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 18:26:33] [INFO] [:00000008 jlogin_node] <tool/service/startup/start_node.lua:93> hostConfig {
+  ["server_id"]=55002,
+  ["start_service"]=
+    {
+      ["jlogin"]="127.0.0.1:32528",
+    },
+  ["jlogin_ipport"]="127.0.0.1:32525",
+  ["nodename"]="jlogin",
+  ["ipport"]="127.0.0.1:32528",
+} {
+  [1]=
+    {
+      ["server_id"]=1,
+      ["start_service"]=
+        {
+          ["example"]="127.0.0.1:32527",
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["nodename"]="user",
+      ["ipport"]="127.0.0.1:32526",
+    },
+  [55002]=
+    {
+      ["server_id"]=55002,
+      ["start_service"]=
+        {
+          ["jlogin"]="127.0.0.1:32528",
+        },
+      ["jlogin_ipport"]="127.0.0.1:32525",
+      ["nodename"]="jlogin",
+      ["ipport"]="127.0.0.1:32528",
+    },
+  [55001]=
+    {
+      ["server_id"]=55001,
+      ["start_service"]=
+        {
+          ["display"]="127.0.0.1:32527",
+          ["example"]="127.0.0.1:32527",
+        },
+      ["nodename"]="cross",
+      ["ipport"]="127.0.0.1:32527",
+    },
+}

@@ -49,12 +49,15 @@ local function getClusterName(service, serverId)
 	if not service or not serverId then
 		return
 	end
-	print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
-	local sId2name = SERVICE_CLUSTERNAME[service]
-	if type(sId2name) == "table" then
-		return sId2name[serverId]
+	local data = SERVICE_CLUSTERNAME[service]
+	if type(data) ~= "table" then
+		return data
 	end
-	return sId2name
+	if data.clusterName then
+		-- unique 服务只有一个宿主节点，忽略传入的 serverId
+		return data.clusterName
+	end
+	return data[serverId]
 end
 
 -- rpc.mod_call.服务名[区服编号].模块名.函数名(参数1, ....)

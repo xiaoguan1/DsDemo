@@ -6,7 +6,28 @@ local skynet = require "skynet"
 require "skynet.manager"
 local nodename = assert(skynet.getenv("node_name"))
 
-function abort(msg)
+local function startSuccess()
+			-- 启动成功标志：GUAN
+		local C_GREEN = "\27[1;32m"	-- 亮绿
+		local C_CYAN = "\27[1;36m"	-- 亮青
+		local C_RESET = "\27[0m"
+		print(C_GREEN .. [[
++========================================+
+|                                        |
+|    ____    _   _       _       _   _   |
+|   / ___|  | | | |     / \     | \ | |  |
+|  | |  _   | | | |    / _ \    |  \| |  |
+|  | |_| |  | |_| |   / ___ \   | |\  |  |
+|   \____|   \___/   /_/   \_\  |_| \_|  |
+|                                        |
+]])
+		print(C_CYAN .. [[|          SERVER START SUCCESS          |]])
+		print(C_GREEN .. [[|                                        |
++========================================+
+]] .. C_RESET)
+end
+
+local function abort(msg)
 	skynet.error(msg)
 	skynet.sleep(100)
 	skynet.abort()
@@ -78,7 +99,7 @@ function StartNode(serviceOrder)
 		if not hostConfig then
 			abort(SERVER_CONFIG)
 		end
-		print("hostConfig ", tool.dumptree(hostConfig), SERVER_CONFIG)
+
 		skynet.setenv("host_env", tool.dumptree(hostConfig))
 		skynet.setenv("server_config", tool.dumptree(SERVER_CONFIG))
 		doGamePreload()
@@ -89,5 +110,8 @@ function StartNode(serviceOrder)
 		startBasicSvr(serviceOrder.unique)
 		startNormalSvr(serviceOrder.normal)
 		startAdhocSvr(hostConfig.start_service, serviceOrder.adhoc)
+
+		_INFO_F("hostConfig %s %s", tool.dumptree(hostConfig), tool.dumptree(SERVER_CONFIG))
+		startSuccess()
 	end)
 end

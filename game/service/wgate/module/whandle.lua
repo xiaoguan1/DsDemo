@@ -47,19 +47,6 @@ GateClusterName = false
 
 handle = {__ClassType = "whandle"} -- 加上 __ClassType 支持热更
 
--- 获取登录仲裁服务所在节点
-local function GetJLoginClusterName()
-	local data = SERVICE_CLUSTERNAME and SERVICE_CLUSTERNAME["jlogin"]
-	if not data then
-		return
-	end
-	for _, cn in pairs(data) do
-		if cn then
-			return cn
-		end
-	end
-end
-
 -- 打包下行协议帧：消息总长度（2字节）| 协议编号（2字节）| 协议内容
 local function _PackFrame(proto_id, payload)
 	local total = 4 + #payload
@@ -68,12 +55,13 @@ end
 
 -- 客户端 token 登录：校验凭证 -> 本地 agent 分配绑定 -> 回登录成功 -> 通知 jlogin 登录完成
 local function _TokenLogin(id, token)
-	local jlogin_cn = GetJLoginClusterName()
-	if not jlogin_cn then
+	-- jlogin 为集群唯一服务，通过 GetUniqueProxy 获取代理（未启动时返回 nil）
+	local jlogin = PROXYSVR.GetUniqueProxy("jlogin", "lua")
+	if not jlogin then
 		websocket.close(id, 4000, "jlogin not ready")
 		return
 	end
-	local isOk, uid, server_id = TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").call, "verify_token", token)
+	local isOk, uid, server_id = TryCall(jlogin.call, "verify_token", token)
 	if not isOk or not uid then
 		_ERROR_F("sid:%s verify token fail, close", id)
 		websocket.close(id, 4000, "token invalid")
@@ -107,7 +95,7 @@ local function _TokenLogin(id, token)
 	_INFO_F("sid:%s token login success uid:%s agent:%s bind_id:%s", id, uid, workerName, bind_id)
 
 	-- 通知 jlogin 登录完成：清 Logging 占位，跨节点顶号则踢旧节点连接
-	TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").send, "login_done", uid)
+	TryCall(jlogin.send, "login_done", uid)
 end
 
 function handle.warning ()
@@ -301,17 +289,15 @@ end
 
 -- 向 jlogin 注册本网关监听地址并维持心跳（10秒一次，jlogin 30秒无心跳剔除）
 function StartGateRegister(wsocket_port)
-	local jlogin_cn = GetJLoginClusterName()
-	if not jlogin_cn then
-		_ERROR_F("gate:%s jlogin not found, register skip", GateName)
-		return
-	end
 	local ip = assert(smatch(SELF_IPPORT, "^(.-):%d+$"))
 	local server_id = HOST_ENV.server_id
 	skynet.fork(function ()
 		while true do
-			TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").send,
-				"register_gate", server_id, GateName, GateClusterName, ip, wsocket_port)
+			-- jlogin 为集群唯一服务；未启动时本轮跳过，下轮重试
+			local jlogin = PROXYSVR.GetUniqueProxy("jlogin", "lua")
+			if jlogin then
+				TryCall(jlogin.send, "register_gate", server_id, GateName, GateClusterName, ip, wsocket_port)
+			end
 			skynet.sleep(10 * 100)
 		end
 	end)
