@@ -30,9 +30,9 @@ local MESSAGE_BINARY_TYPE = "binary"
 -- 连接状态表：sid -> { status }
 local Clients = {}
 
--- 登录流程回调（由 global.lua 注入）
-local LoginCb = false
-local CreateCb = false
+-- 登录流程回调（由 global.lua 注入；全局，热更后不重置）
+LoginCb = false
+CreateCb = false
 
 handle = { __ClassType = "jhandle" }
 

@@ -32,7 +32,8 @@ local cluster_no = assert(tonumber(skynet.getenv("cluster_no")))
 
 -- 账号库连接信息（独立账号库 accountdb）
 local ACCOUNT_DB = assert(load("return " .. assert(skynet.getenv("accountdb_info"))))()
-local AccountDb = false
+-- 账号库连接句柄（全局，热更后不重置）
+AccountDb = false
 
 -- 集群内 user 节点列表（有序；跨节点调用按此遍历）
 local UserNodes = {}

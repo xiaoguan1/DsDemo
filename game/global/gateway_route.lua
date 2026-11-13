@@ -10,7 +10,8 @@ local mquote_sql_str = mysql.quote_sql_str
 
 local CENTER_DATABASE = assert(load("return " .. skynet.getenv("centerdatadb_info"))())
 
-local DB = false
+-- 中心库连接句柄（全局，热更后不重置）
+DB = false
 
 -- 获取中心库连接（注意：协程会阻塞；驱动会在断线后自动重连）
 local function _GetDb()
