@@ -16,7 +16,7 @@ local agent_default_num = tonumber(skynet.getenv("agent_default_num")) or 8
 
 local AgentName = ".AGENT" .. agent_index
 
--- 本实例在线玩家表：uid -> { gate_name, gate_cn }
+-- 本实例在线玩家表：uid -> { gate_name, gate_cn, bind_id }
 Players = {}
 
 local function PlayerCount()
@@ -27,21 +27,31 @@ local function PlayerCount()
 	return cnt
 end
 
--- 玩家绑定（管理者 alloc 调用）：记录归属网关，返回负载
-function RESPONSE.bind(uid, gate_name, gate_cn)
+-- 玩家绑定（管理者 alloc 调用）：记录归属网关与绑定流水号，返回负载
+function RESPONSE.bind(uid, gate_name, gate_cn, bind_id)
 	local old = Players[uid]
 	if old and (old.gate_name ~= gate_name or old.gate_cn ~= gate_cn) then
 		_WARN_F("worker:%s player:%s rebind gate:%s -> %s", AgentName, uid, tostring(old.gate_name), tostring(gate_name))
+		-- 跨网关顶号：踢掉旧网关上的连接（旧连接下线通知会因 bind_id 不符被忽略）
+		TryCall(PROXYSVR.GetProxy(old.gate_name, old.gate_cn, "lua").send, "kick", uid)
 	end
-	Players[uid] = { gate_name = gate_name, gate_cn = gate_cn }
-	_INFO_F("worker:%s bind player:%s gate:%s", AgentName, uid, tostring(gate_name))
+	Players[uid] = { gate_name = gate_name, gate_cn = gate_cn, bind_id = bind_id }
+	_INFO_F("worker:%s bind player:%s gate:%s bind_id:%s", AgentName, uid, tostring(gate_name), tostring(bind_id))
 	return PlayerCount()
 end
 
--- 玩家解绑（下线/被顶号）：返回负载；空实例且编号 > 底座则缩容退出
-function RESPONSE.unbind(uid)
-	if not Players[uid] then
-		return PlayerCount()
+-- 玩家解绑（下线/被顶号）：返回 负载, 是否真正解绑；空实例且编号 > 底座则缩容退出
+-- bind_id 为 nil 表示无条件解绑（管理者顶号清旧归属）；非 nil 需与绑定流水号一致，
+-- 防止旧连接的下线通知误踢新连接
+function RESPONSE.unbind(uid, bind_id)
+	local info = Players[uid]
+	if not info then
+		return PlayerCount(), false
+	end
+	if bind_id and info.bind_id ~= bind_id then
+		_WARN_F("worker:%s player:%s unbind bind_id mismatch(%s ~= %s), ignore",
+			AgentName, uid, tostring(bind_id), tostring(info.bind_id))
+		return PlayerCount(), false
 	end
 	Players[uid] = nil
 	_INFO_F("worker:%s unbind player:%s", AgentName, uid)
@@ -53,7 +63,17 @@ function RESPONSE.unbind(uid)
 		_INFO_F("worker:%s empty and index:%s > default:%s, exit", AgentName, agent_index, agent_default_num)
 		skynet.exit()
 	end
-	return count
+	return count, true
+end
+
+-- 踢下线（跨节点顶号，jlogin -> manager -> worker）：踢掉 uid 当前归属网关的连接
+function ACCEPT.kick_uid(uid)
+	local info = Players[uid]
+	if not info then
+		return
+	end
+	TryCall(PROXYSVR.GetProxy(info.gate_name, info.gate_cn, "lua").send, "kick", uid)
+	_INFO_F("worker:%s kick player:%s gate:%s", AgentName, uid, tostring(info.gate_name))
 end
 
 -- 处理玩家上行协议（demo：原样回推，验证链路）

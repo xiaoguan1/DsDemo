@@ -1,10 +1,11 @@
--- 仲裁登录服务（集群内全局唯一，命名 .JLOGIN）：所有 user 节点玩家登录统一访问本服务
--- 1. pick_node：挑选玩家落点的 user 节点（顶号复用原节点，新玩家轮询分配）
--- 2. alloc：选定节点后调用该节点 agent 管理者分配 worker，返回节点 server_id 与 worker 名
--- 3. unbind：玩家下线/顶号，转发到落点节点解绑
--- 4. 玩家落点缓存：uid -> user 节点 server_id（本服务全局唯一，进程内缓存即可）
+-- 仲裁登录服务（集群内全局唯一，命名 .JLOGIN）：玩家登录第一步网络连接本服务
+-- 1. 监听 jlogin_ipport（server_config 宿主行配置），客户端 websocket 接入
+-- 2. 账号判断/创角、登录落点决策、token 发放（逻辑见 global.lua）
+-- 3. wgate 注册/心跳、token 校验、login_done 等内部 RPC 接口
 
 local skynet = require "skynet"
+local socket = require "skynet.socket"
+local websocket = require "http.websocket"
 
 CLIENT_ACCEPT = {}
 CLIENT_RESPONSE = {}
@@ -45,5 +46,24 @@ skynet.start(function ()
 	end)
 
 	dofile "game/service/jlogin/global.lua"
+
+	-- 监听客户端接入地址（本节点为宿主时 HOST_ENV.jlogin_ipport 必填）
+	local jip, jport = string.match(assert(HOST_ENV.jlogin_ipport, "jlogin host must config jlogin_ipport"), "^(.+):(%d+)$")
+	local listend = socket.listen(jip, tonumber(jport), 128)
+	_INFO_F("jlogin open listen:%s:%s", jip, jport)
+
+	socket.start(listend, function (newsd, addr)
+		skynet.fork(function ()
+			_INFO_F("jlogin new client addr:%s connect beginning.", addr)
+			local ok, err = websocket.accept(newsd, JHANDLE.handle, "ws", addr)
+			if not ok then
+				print(err)
+			end
+		end)
+	end)
+
+	if __init__ then
+		__init__()
+	end
 	_INFO_F("jlogin start ok")
 end)

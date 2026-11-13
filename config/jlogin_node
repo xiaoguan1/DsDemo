@@ -67,6 +67,14 @@ centerdatadb_info = [[{
 	dbpasswd = "root",
 }]]
 
+accountdb_info = [[{
+	dbhost = "127.0.0.1",
+	dbport = 3306,
+	dbname = "accountdb",
+	dbuser = "root",
+	dbpasswd = "root",
+}]]
+
 mongo_log_db = [[{
 	host = "127.0.0.1",
 	port = 27021,

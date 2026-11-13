@@ -1,0 +1,4 @@
+[2026-11-13 16:03:51] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 16:03:51] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok
+[2026-11-13 16:05:13] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:53> jlogin open listen:127.0.0.1:32525
+[2026-11-13 16:05:13] [INFO] [:00000013 jlogin] <./game/service/jlogin/jlogin.lua:68> jlogin start ok

@@ -1,0 +1,46 @@
+[2026-11-13 13:13:27] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
+[2026-11-13 13:13:27] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
+[2026-11-13 13:13:27] [INFO] [:00000014 wgate] <./game/service/wgate/wgate.lua:90> wgate:.WGATE open listen:30001
+[2026-11-13 13:13:27] [INFO] [:00000015 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:00000016 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:00000017 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:00000018 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:00000019 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:0000001a agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:0000001b agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 13:13:27] [INFO] [:0000001c agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
+[2026-11-13 16:02:59] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
+[2026-11-13 16:02:59] [INFO] [:00000014 wgate] <./game/service/wgate/wgate.lua:90> wgate:.WGATE open listen:30001
+[2026-11-13 16:02:59] [INFO] [:00000015 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:00000016 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:00000017 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:00000018 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:00000019 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:0000001a agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:0000001b agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:02:59] [INFO] [:0000001c agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
+[2026-11-13 16:03:57] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
+[2026-11-13 16:03:57] [INFO] [:00000014 wgate] <./game/service/wgate/wgate.lua:90> wgate:.WGATE open listen:30001
+[2026-11-13 16:03:57] [INFO] [:00000011 gcluster] <tool/service/basic/gcluster/gcluster_fd_class.lua:174> fd[5] auth succeed
+[2026-11-13 16:03:57] [INFO] [:00000015 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:00000016 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:00000017 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:00000018 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:00000019 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:0000001a agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:0000001b agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:03:57] [INFO] [:0000001c agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:03] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:1 funcName:SaveModule timeOut:1
+[2026-11-13 16:05:03] [INFO] [:00000013 display] <game/global/call_out.lua:172> CallFre callIdx:2 funcName:CheckClsSplit timeOut:600
+[2026-11-13 16:05:03] [INFO] [:00000014 wgate] <./game/service/wgate/wgate.lua:90> wgate:.WGATE open listen:30001
+[2026-11-13 16:05:03] [INFO] [:00000015 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:00000016 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:00000017 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:00000018 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:00000019 agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:0000001a agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:0000001b agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:04] [INFO] [:0000001c agent] <./game/service/agent/agent.lua:53> agent manager index:1 start ok
+[2026-11-13 16:05:13] [INFO] [:00000011 gcluster] <tool/service/basic/gcluster/gcluster_fd_class.lua:174> fd[6] auth succeed

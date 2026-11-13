@@ -77,7 +77,7 @@ function ACCEPT.worker_exit(index)
 end
 
 -- 分配玩家到最空闲 worker：全满自动扩容；成功返回 worker 名，失败返回 nil
-function RESPONSE.alloc(uid, gate_name, gate_cn)
+function RESPONSE.alloc(uid, gate_name, gate_cn, bind_id)
 	local old_index = PlayerAgent[uid]
 
 	local index = PickWorker()
@@ -90,7 +90,7 @@ function RESPONSE.alloc(uid, gate_name, gate_cn)
 	end
 
 	-- 绑定并同步负载；失败（worker 已死）则剔除换一个重试
-	local isOk, count = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "bind", uid, gate_name, gate_cn)
+	local isOk, count = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "bind", uid, gate_name, gate_cn, bind_id)
 	if not isOk then
 		_WARN_F("manager worker:%s bind fail, remove", WorkerName(index))
 		Workers[index] = nil
@@ -98,7 +98,7 @@ function RESPONSE.alloc(uid, gate_name, gate_cn)
 		if not index then
 			return
 		end
-		isOk, count = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "bind", uid, gate_name, gate_cn)
+		isOk, count = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "bind", uid, gate_name, gate_cn, bind_id)
 		if not isOk then
 			return
 		end
@@ -107,7 +107,9 @@ function RESPONSE.alloc(uid, gate_name, gate_cn)
 
 	PlayerAgent[uid] = index
 	if old_index and old_index ~= index then
-		-- 顶号：解绑旧 worker 上的归属
+		-- 顶号：先踢旧连接（worker 层踢旧网关），再无条件解绑旧 worker 上的归属
+		TryCall(PROXYSVR.GetProxy(WorkerName(old_index), SELF_CLUSTERNAME, "lua").send, "kick_uid", uid)
+		-- bind_id 传 nil，worker 侧跳过流水号校验
 		local isOk2, old_count = TryCall(PROXYSVR.GetProxy(WorkerName(old_index), SELF_CLUSTERNAME, "lua").call, "unbind", uid)
 		if isOk2 and Workers[old_index] then
 			Workers[old_index] = old_count
@@ -116,26 +118,51 @@ function RESPONSE.alloc(uid, gate_name, gate_cn)
 	return WorkerName(index)
 end
 
--- 解绑玩家：按落点表转发到对应 worker（玩家下线/被顶号调用）
-function ACCEPT.unbind(uid)
+-- 解绑玩家：按落点表转发到对应 worker（玩家下线调用，bind_id 由 worker 校验防误踢）
+function ACCEPT.unbind(uid, bind_id)
 	local index = PlayerAgent[uid]
 	if not index then
 		return
 	end
-	PlayerAgent[uid] = nil
-	local isOk, count = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "unbind", uid)
-	if isOk and Workers[index] then
+	local isOk, count, removed = TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").call, "unbind", uid, bind_id)
+	if not isOk then
+		return
+	end
+	-- bind_id 校验通过才真正解绑，此时才清落点表（防止旧连接下线通知误清新连接落点）
+	if removed then
+		PlayerAgent[uid] = nil
+	end
+	if Workers[index] then
 		Workers[index] = count
 	end
 end
 
--- 总在线玩家数（监控/仲裁查询用）
-function RESPONSE.player_count()
+-- 跨节点顶号踢旧连接（jlogin 调用）：转发到落点 worker 踢掉旧网关连接
+function ACCEPT.kick_uid(uid)
+	local index = PlayerAgent[uid]
+	if not index then
+		return
+	end
+	TryCall(PROXYSVR.GetProxy(WorkerName(index), SELF_CLUSTERNAME, "lua").send, "kick_uid", uid)
+end
+
+-- 在线人数汇总
+local function PlayerCount()
 	local cnt = 0
 	for _, count in pairs(Workers) do
 		cnt = cnt + count
 	end
 	return cnt
+end
+
+-- 总在线玩家数（监控/仲裁查询用）
+function RESPONSE.player_count()
+	return PlayerCount()
+end
+
+-- 登录仲裁查询：返回 (本节点在线总人数, 该uid是否在线)（jlogin 每次登录全量查询用）
+function RESPONSE.query(uid)
+	return PlayerCount(), PlayerAgent[uid] ~= nil
 end
 
 -- 缩容扫描：逐个检测 worker 在线人数；仅回收编号 > 底座的空实例，底座 worker（2~N）常驻
@@ -167,6 +194,6 @@ function __init__()
 		while true do
 			skynet.sleep(60 * 100)
 			CS(SweepWorkers)
-		end
+		end 
 	end)
 end

@@ -89,6 +89,9 @@ skynet.start(function (gate_index)
 	local listend = socket.listen("0.0.0.0", wsocket_port, 128)
 	_INFO_F("wgate:%s open listen:%s", gate_name, wsocket_port)
 
+	-- 向 jlogin 注册本网关监听地址并维持心跳（登录决策时挑选存活网关下发）
+	_G.WHANDLE.StartGateRegister(wsocket_port)
+
 	socket.start(listend, function (newsd, addr)
 		skynet.fork(function ()
 			_INFO_F("new client adds:%s connect beginning.", addr)

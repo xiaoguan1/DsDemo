@@ -18,6 +18,9 @@ local WPlayerConnect = 2	-- 完成玩家连接
 
 local MESSAGE_BINARY_TYPE = "binary"	-- 前后端仅支持binary消息类型
 
+local CLIENT_C2W_TOKEN_LOGIN = 10003	-- C->W token 登录（payload = token）
+local W2C_LOGIN_RESULT = 20001		-- W->C 登录结果（payload = code:msg）
+
 WScoketToInfo = false
 -- {
 	-- [socket_id] = {
@@ -27,6 +30,7 @@ WScoketToInfo = false
 	-- 	uid = ..., 绑定后的玩家唯一uid
 	-- 	agent_name = ..., 玩家逻辑服(agent)的服务名
 	-- 	agent_clustername = ..., 玩家逻辑服所在节点
+	-- 	bind_id = ..., 绑定流水号（GateName: sid，下线通知凭此校验，防止误踢新连接）
 	-- },
 	-- ...,
 -- }
@@ -60,6 +64,50 @@ end
 local function _PackFrame(proto_id, payload)
 	local total = 4 + #payload
 	return string.pack(">I2", total) .. string.pack(">I2", proto_id) .. payload
+end
+
+-- 客户端 token 登录：校验凭证 -> 本地 agent 分配绑定 -> 回登录成功 -> 通知 jlogin 登录完成
+local function _TokenLogin(id, token)
+	local jlogin_cn = GetJLoginClusterName()
+	if not jlogin_cn then
+		websocket.close(id, 4000, "jlogin not ready")
+		return
+	end
+	local isOk, uid, server_id = TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").call, "verify_token", token)
+	if not isOk or not uid then
+		_ERROR_F("sid:%s verify token fail, close", id)
+		websocket.close(id, 4000, "token invalid")
+		return
+	end
+	-- token 是发给指定落点节点网关的，连错网关直接拒绝
+	if tonumber(server_id) ~= HOST_ENV.server_id then
+		_ERROR_F("sid:%s token server_id:%s ~= self:%s, close", id, tostring(server_id), HOST_ENV.server_id)
+		websocket.close(id, 4000, "wrong gate")
+		return
+	end
+
+	-- wgate 与 agent 必为同节点：直接调用本节点 .AGENT 分配 worker
+	local bind_id = GateName .. ":" .. id
+	local isOk2, workerName = TryCall(PROXYSVR.GetProxy(".AGENT", SELF_CLUSTERNAME, "lua").call,
+		"alloc", uid, GateName, GateClusterName, bind_id)
+	if not isOk2 or not workerName then
+		_ERROR_F("sid:%s alloc fail, close", id)
+		websocket.close(id, 4000, "alloc fail")
+		return
+	end
+
+	local isOk3 = Bind(id, uid, workerName, SELF_CLUSTERNAME, bind_id)
+	if not isOk3 then
+		websocket.close(id, 4000, "bind fail")
+		return
+	end
+
+	-- 回登录成功
+	websocket.write(id, _PackFrame(W2C_LOGIN_RESULT, "0:ok"), MESSAGE_BINARY_TYPE)
+	_INFO_F("sid:%s token login success uid:%s agent:%s bind_id:%s", id, uid, workerName, bind_id)
+
+	-- 通知 jlogin 登录完成：清 Logging 占位，跨节点顶号则踢旧节点连接
+	TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").send, "login_done", uid)
 end
 
 function handle.warning ()
@@ -127,17 +175,13 @@ local function _Message(id, msg, msg_type)
 		TryCall(PROXYSVR.GetProxy(sinfo.agent_name, sinfo.agent_clustername, "client").send,
 			"client_msg", sinfo.uid, proto_id, payload)
 	else
-		-- 未绑定：首包视为登录请求，交给登录仲裁服务
-		local jlogin_cn = GetJLoginClusterName()
-		if not jlogin_cn then
-			_ERROR_F("sid:%s jlogin not found, close", id)
-			websocket.close(id, 4000, "jlogin not ready")
-			return
+		-- 未绑定：首包必须是 token 登录（登录决策由 jlogin 完成，网关只认 token）
+		if proto_id == CLIENT_C2W_TOKEN_LOGIN then
+			skynet.fork(_TokenLogin, id, payload)
+		else
+			_ERROR_F("sid:%s unbound recv proto:%s, need token login", id, proto_id)
+			websocket.close(id, 4000, "need token login")
 		end
-		-- 尝试从握手url解析uid（?uid=xxx），解析不到由jlogin兜底生成
-		local uid = sinfo.url and smatch(sinfo.url, "uid=([%w_%-]+)")
-		TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "client").send,
-			"login", id, uid, sinfo.url or "", proto_id, payload)
 	end
 end
 
@@ -169,18 +213,12 @@ local function _Clean(id, code, reason)
 		end
 		SocketToPlayer[id] = nil
 
-		-- 通知登录仲裁服务校验并注销路由
-		local jlogin_cn = GetJLoginClusterName()
-		if jlogin_cn then
-			TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "client").send,
-				"logout", uid, GateName, GateClusterName)
-		end
-		-- 通知玩家逻辑服(agent)解绑
+		-- 通知玩家逻辑服(agent)解绑（带 bind_id，agent 校验一致才解绑，防止旧连接下线误踢新连接）
 		if sinfo.agent_name and sinfo.agent_clustername then
-			TryCall(PROXYSVR.GetProxy(sinfo.agent_name, sinfo.agent_clustername, "client").send,
-				"unbind", uid)
+			TryCall(PROXYSVR.GetProxy(sinfo.agent_name, sinfo.agent_clustername, "lua").send,
+				"unbind", uid, sinfo.bind_id)
 		end
-		_INFO_F("player:%s offline, gate:%s sid:%s code:%s reason:%s", uid, GateName, id, tostring(code), tostring(reason))
+		_INFO_F("player:%s offline, gate:%s sid:%s bind_id:%s code:%s reason:%s", uid, GateName, id, tostring(sinfo.bind_id), tostring(code), tostring(reason))
 	end
 end
 
@@ -201,8 +239,8 @@ end
 
 ---------------------- 供 wgate 服务调用的对外接口 ----------------------
 
--- 绑定玩家与socket连接（登录仲裁服务调用）
-function Bind(id, uid, agent_name, agent_cn)
+-- 绑定玩家与socket连接（token 登录成功后调用）
+function Bind(id, uid, agent_name, agent_cn, bind_id)
 	local sinfo = WScoketToInfo[id]
 	if not sinfo then
 		return false, "sid not exist"
@@ -217,13 +255,22 @@ function Bind(id, uid, agent_name, agent_cn)
 		SocketToPlayer[id] = nil
 	end
 
+	-- 同网关顶号：先记旧连接，写新索引后关闭（跨网关顶号由 worker rebind 时 kick）
+	local old_id = PlayerToSocket[uid]
+
 	sinfo.uid = uid
 	sinfo.agent_name = agent_name
 	sinfo.agent_clustername = agent_cn
+	sinfo.bind_id = bind_id
 	sinfo.status = WPlayerConnect
 
 	PlayerToSocket[uid] = id
 	SocketToPlayer[id] = uid
+
+	if old_id and old_id ~= id then
+		websocket.close(old_id, 4000, "replace by new connection")
+		_INFO_F("uid:%s rebind same gate, close old sid:%s", uid, old_id)
+	end
 	return true
 end
 
@@ -250,4 +297,22 @@ end
 -- 当前网关在线连接数（最小连接仲裁用）
 function GetGateCount()
 	return #WScoketToInfo
+end
+
+-- 向 jlogin 注册本网关监听地址并维持心跳（10秒一次，jlogin 30秒无心跳剔除）
+function StartGateRegister(wsocket_port)
+	local jlogin_cn = GetJLoginClusterName()
+	if not jlogin_cn then
+		_ERROR_F("gate:%s jlogin not found, register skip", GateName)
+		return
+	end
+	local ip = assert(smatch(SELF_IPPORT, "^(.-):%d+$"))
+	local server_id = HOST_ENV.server_id
+	skynet.fork(function ()
+		while true do
+			TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").send,
+				"register_gate", server_id, GateName, GateClusterName, ip, wsocket_port)
+			skynet.sleep(10 * 100)
+		end
+	end)
 end
