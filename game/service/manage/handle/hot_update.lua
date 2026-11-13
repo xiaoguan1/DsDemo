@@ -95,8 +95,8 @@ function Handle_Request(data)
 		return true
 	end
 
-	local psvr = BASIC_SERVICE_MAP["protosvr"] and BASIC_SERVICE_MAP["protosvr"].named and
-				PROXYSVR.GetProxy(BASIC_SERVICE_MAP["protosvr"].named, SELF_CLUSTERNAME)
+	local psvr = SERVICE_MAP["protosvr"] and SERVICE_MAP["protosvr"].named and
+				PROXYSVR.GetProxy(SERVICE_MAP["protosvr"].named, SELF_CLUSTERNAME)
 	if not psvr then
 		_ERROR("hot update fail, because psvr svr not exists!")
 		return true

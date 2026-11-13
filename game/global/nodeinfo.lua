@@ -44,7 +44,7 @@ end
 -- 校验 unique 服务的集群唯一性：有且仅有一个节点本地启动(is_start_xxx == 1)，
 -- 其余节点的值必须是 0（不启动）或等于宿主节点 server_id（指向宿主）
 local function checkUniqueSvr(dbRes)
-	for svrname, svrData in pairs(ALL_SERVICE_MAP) do
+	for svrname, svrData in pairs(SERVICE_MAP) do
 		if svrData.unique then
 			local hostServerId
 			for _, res in ipairs(dbRes) do

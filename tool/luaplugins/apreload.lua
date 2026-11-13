@@ -36,14 +36,14 @@ SELF_CLUSTERNAME = sformat(CLUSTER_NAME_FMT, HOST_ENV.nodename, cluster_no, serv
 -- 多实例服务：{ [serverId] = 节点名 }
 SERVICE_CLUSTERNAME = {}
 local function gen_serice_clutsername()
-	for servicename, svrData in pairs(ALL_SERVICE_MAP) do
-		if not svrData.unique then
+	for servicename, svrData in pairs(SERVICE_MAP) do
+		if not svrData.unique and not svrData.basic then
 			SERVICE_CLUSTERNAME[servicename] = {}
 		end
 	end
 
 	local function regService(servicename, serverId, clustername)
-		local svrData = ALL_SERVICE_MAP[servicename]
+		local svrData = SERVICE_MAP[servicename]
 		if svrData and svrData.unique then
 			SERVICE_CLUSTERNAME[servicename] = { hostId = serverId, clusterName = clustername }
 		else
@@ -51,12 +51,11 @@ local function gen_serice_clutsername()
 		end
 	end
 
-	-- 节点类型 -> 启动服务顺序表（新增节点类型在此登记）
-	local NODE_SERVICE_ORDER = {
-		[USER_NODE] = START_USER_SERVICE,
-		[CROSS_NODE] = START_CROSS_SERVICE,
-		[JLOGIN_NODE] = START_JLOGIN_SERVICE,
-	}
+	-- 节点类型 -> 启动服务顺序表（由 START_SERVICE_LIST 派生，新增节点类型无需改此处）
+	local NODE_SERVICE_ORDER = {}
+	for _, st in ipairs(START_SERVICE_LIST) do
+		NODE_SERVICE_ORDER[st.nodename] = st
+	end
 
 	for serverId, config in pairs(SERVER_CONFIG) do
 		local serviceOrder = NODE_SERVICE_ORDER[config.nodename]

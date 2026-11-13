@@ -15,7 +15,7 @@ local nodename = assert(skynet.getenv("node_name"))
 local cluster_no = tonumber(assert(skynet.getenv("cluster_no")))
 local CLUSTER_NAME_FMT = assert(CLUSTER_NAME_FMT)
 local SERVICE_CLUSTERNAME = assert(SERVICE_CLUSTERNAME)
-local ALL_SERVICE_MAP = assert(ALL_SERVICE_MAP)
+local SERVICE_MAP = assert(SERVICE_MAP)
 
 local MISC = Import("game/global/rpc/misc.lua")
 
@@ -227,8 +227,8 @@ function GetProxyByServiceName(serviceName, ...)
 		return
 	end
 
-	local namedData = BASIC_SERVICE_MAP[serviceName]
-	if namedData then
+	local namedData = SERVICE_MAP[serviceName]
+	if namedData and namedData.basic then
 		-- 基础设施服务，不支持跨节点通信
 		assert(namedData.named and clusterName == SELF_CLUSTERNAME)
 		return GetProxy(namedData.named, SELF_CLUSTERNAME, prototype)
@@ -243,7 +243,7 @@ function GetProxyByServiceName(serviceName, ...)
 	if clusterName ~= SELF_CLUSTERNAME then
 		-- 若是跨节点则检查对方节点是否启动了该服务（暂时不考虑normal的情况）
 		local svrCluster = SERVICE_CLUSTERNAME[serviceName]
-		if ALL_SERVICE_MAP[serviceName] and ALL_SERVICE_MAP[serviceName].unique then
+		if SERVICE_MAP[serviceName] and SERVICE_MAP[serviceName].unique then
 			assert(svrCluster and svrCluster.hostId == serverId)
 		else
 			assert(svrCluster and svrCluster[serverId])
@@ -255,7 +255,7 @@ end
 -- 获取集群内唯一服务的代理（如 jlogin）
 -- SERVICE_CLUSTERNAME 中 unique 服务登记为 { hostId = 服务器id, clusterName = 节点名 }
 function GetUniqueProxy(serviceName, prototype)
-	local namedData = assert(ALL_SERVICE_MAP[serviceName], "not in ALL_SERVICE_MAP: " .. serviceName)
+	local namedData = assert(SERVICE_MAP[serviceName], "not in SERVICE_MAP: " .. serviceName)
 	assert(namedData.unique, serviceName .. " is not unique service")
 
 	local data = SERVICE_CLUSTERNAME[serviceName]

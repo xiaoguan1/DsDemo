@@ -40,25 +40,21 @@ local function doGamePreload()
 	dofile(aPreload)
 end
 
-local function startBasicSvr(uniqueList)
-	for _, svrname in ipairs(uniqueList) do
+local function startBasicSvr(basicList)
+	for _, svrname in ipairs(basicList) do
 		local isOk, id = pcall(skynet.uniqueservice, svrname)
 		if not isOk or not id then
 			abort(string.format("start service[%s] fail", svrname))
 		end
-		skynet.name(BASIC_SERVICE_MAP[svrname].named, id)
+		skynet.name(SERVICE_MAP[svrname].named, id)
 	end
 end
 
 local function startNormalSvr(normalList)
 	for _, svrname in ipairs(normalList or {}) do
-		-- 无状态多实例服务：按配置数量启动多个实例，便于水平扩展
-		local svr_num
-		if svrname == "wgate" then
-			svr_num = tonumber(skynet.getenv("gateway_num")) or 1
-		elseif svrname == "agent" then
-			svr_num = tonumber(skynet.getenv("agent_default_num")) or 1
-		end
+		-- 无状态多实例服务：SERVICE_MAP 配置 num_env 时从环境变量读取实例数量，便于水平扩展
+		local svrData = SERVICE_MAP[svrname]
+		local svr_num = svrData.num_env and (tonumber(skynet.getenv(svrData.num_env)) or 1) or nil
 		if svr_num then
 			for i = 1, svr_num do
 				local id = skynet.newservice(svrname, i)
@@ -92,7 +88,7 @@ local function startAdhocSvr(startService, adhocList)
 end
 
 function StartNode(serviceOrder)
-	assert(serviceOrder and serviceOrder.unique)
+	assert(serviceOrder and serviceOrder.basic)
 	skynet.start(function ()
 		local nodeInfo = Import("game/global/nodeInfo.lua")
 		local hostConfig, SERVER_CONFIG = nodeInfo.GetAllNodeData()
@@ -107,7 +103,7 @@ function StartNode(serviceOrder)
 		dofile "./game/global/log.lua"
 		dofile "./game/global/dblog.lua"
 
-		startBasicSvr(serviceOrder.unique)
+		startBasicSvr(serviceOrder.basic)
 		startNormalSvr(serviceOrder.normal)
 		startAdhocSvr(hostConfig.start_service, serviceOrder.adhoc)
 

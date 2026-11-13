@@ -1,7 +1,7 @@
 local skynet = require "skynet"
 local skynet_getenv = skynet.getenv
 local SELF_CLUSTERNAME = assert(SELF_CLUSTERNAME)
-local BASIC_SERVICE_MAP = assert(BASIC_SERVICE_MAP)
+local SERVICE_MAP = assert(SERVICE_MAP)
 local CLUSTER_NAME_MATCH = assert(CLUSTER_NAME_MATCH)
 local CLUSTER_MAP = assert(CLUSTER_MAP)
 
@@ -29,7 +29,7 @@ local function gClusterGate()
 	if GCLUSTER_GATE then
 		return GCLUSTER_GATE
 	end
-	local named = BASIC_SERVICE_MAP["gcluster"].named
+	local named = SERVICE_MAP["gcluster"].named
 	GCLUSTER_GATE = assert(skynet.localname(named))
 	return GCLUSTER_GATE
 end

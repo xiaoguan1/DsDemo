@@ -17,9 +17,8 @@ local SERVER_CONFIG = assert(SERVER_CONFIG)
 local SELF_IPPORT = assert(SELF_IPPORT)
 local NODE_LIST = NODE_LIST
 local ADHOC_SERVICE_MAP = assert(ADHOC_SERVICE_MAP)
-local BASIC_SERVICE_MAP = assert(BASIC_SERVICE_MAP)
 local SERVICE_CLUSTERNAME = assert(SERVICE_CLUSTERNAME)
-local ALL_SERVICE_MAP = assert(ALL_SERVICE_MAP)
+local SERVICE_MAP = assert(SERVICE_MAP)
 
 mod_call = {}
 -- mod_send = {}
@@ -33,8 +32,7 @@ local function isVaildSvr(svr)
 	if not svr then
 		return
 	end
-	local mData = BASIC_SERVICE_MAP[svr] or ALL_SERVICE_MAP[svr]
-	-- 这里有问题，因为namedsvr.lua没有限制svr重名！！！
+	local mData = SERVICE_MAP[svr]
 	return mData and mData.named
 end
 
