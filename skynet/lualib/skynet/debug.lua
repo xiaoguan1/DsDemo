@@ -217,31 +217,6 @@ local function init(skynet, export)
 				_data.snapshot_path = path
 			end
 			return skynet.ret(skynet.pack(ret))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		end
 
 		function dbgcmd.PROFILE_CMD(cmd)

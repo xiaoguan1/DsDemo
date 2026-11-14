@@ -54,10 +54,13 @@ local function checkUniqueSvr(dbRes)
 						return false, sformat("unique service[%s] start on multi node[%d] and [%d]", svrname, hostServerId, res.server_id)
 					end
 					hostServerId = res.server_id
-					-- jlogin 在本节点启动时，监听地址 jlogin_ipport 必填
+					-- jlogin 在本节点启动时，监听端口 jlogin_port 必填且必须合法
 					-- （提前校验，避免拖到 jlogin 服务启动时才 assert 崩溃）
-					if svrname == "jlogin" and (not res.jlogin_ipport or res.jlogin_ipport == "") then
-						return false, sformat("unique service[%s] node[%d] start but jlogin_ipport is empty", svrname, res.server_id)
+					if svrname == "jlogin" then
+						local port = tonumber(res.jlogin_port)
+						if not port or port < 1 or port > 65535 then
+							return false, sformat("unique service[%s] node[%d] jlogin_port[%s] invalid", svrname, res.server_id, tostring(res.jlogin_port))
+						end
 					end
 				end
 			end
@@ -109,13 +112,21 @@ local function getAllNodeData(db)
 
 	local SERVER_CONFIG = {}	-- 全部区服的配置，包括自己
 
+	-- ip/port 重建为 ip:port 字符串（SERVER_CONFIG 内部统一用 ipport 做身份标识）
+	local function buildIpPort(res)
+		if res.ipport then
+			return res.ipport
+		end
+		return sformat("%s:%s", res.ip, res.port)
+	end
+
 	local startSvc = {}
-	local selfIpPort = hostDbRes.ipport
+	local selfIpPort = buildIpPort(hostDbRes)
 	local hostConfig = {	-- 本服数据信息
 		server_id = host_id,
 		nodename = nodename,
 		ipport = selfIpPort,
-		jlogin_ipport = hostDbRes.jlogin_ipport ~= "" and hostDbRes.jlogin_ipport or nil,
+		jlogin_port = hostDbRes.jlogin_port ~= "" and hostDbRes.jlogin_port or nil,
 		start_service = startSvc
 	}
 	for key, val in pairs(hostDbRes) do
@@ -133,7 +144,7 @@ local function getAllNodeData(db)
 				if val == host_id or not res then
 					return false, sformat("centerdatabase server_config[%s] error! %s ~= %s", host_id)
 				end
-				startSvc[svriceName] = res.ipport
+				startSvc[svriceName] = buildIpPort(res)
 			end
 		end
 	end
@@ -145,8 +156,8 @@ local function getAllNodeData(db)
 		local serverConfig = {
 			server_id = serverId,
 			nodename = config.node_name,
-			ipport = config.ipport,
-			jlogin_ipport = config.jlogin_ipport ~= "" and config.jlogin_ipport or nil,
+			ipport = buildIpPort(config),
+			jlogin_port = config.jlogin_port ~= "" and config.jlogin_port or nil,
 			start_service = startSvc
 		}
 		for key, val in pairs(config) do
@@ -158,13 +169,13 @@ local function getAllNodeData(db)
 					if not nodeAdhocMap or not nodeAdhocMap[svriceName] then
 						return false, sformat("ADHOC_SERVICE_MAP22 [%s] [%s] not find!", config.node_name, svriceName)
 					end
-					startSvc[svriceName] = config.ipport
+					startSvc[svriceName] = buildIpPort(config)
 				elseif val ~= 0 then
 					local res = otherDbRes[val] or SERVER_CONFIG[val]
 					if (val == config.server_id) or not res then
 							return false, sformat("centerdatabase server_config[%s] error! %s ~= %s", config.server_id)
 					end
-					startSvc[svriceName] = res.ipport
+					startSvc[svriceName] = buildIpPort(res)
 				end
 			end
 		end

@@ -1,5 +1,5 @@
 -- 仲裁登录服务（集群内全局唯一，命名 .JLOGIN）：玩家登录第一步网络连接本服务
--- 1. 监听 jlogin_ipport（server_config 宿主行配置），客户端 websocket 接入
+-- 1. 监听 :: 双栈端口（端口取自 server_config 宿主行 jlogin_port），客户端 websocket 接入
 -- 2. 账号判断/创角、登录落点决策、token 发放（逻辑见 global.lua）
 -- 3. wgate 注册/心跳、token 校验、login_done 等内部 RPC 接口
 
@@ -46,11 +46,13 @@ skynet.start(function ()
 	end)
 
 	dofile "game/service/jlogin/global.lua"
-
-	-- 监听客户端接入地址（本节点为宿主时 HOST_ENV.jlogin_ipport 必填）
-	local jip, jport = string.match(assert(HOST_ENV.jlogin_ipport, "jlogin host must config jlogin_ipport"), "^(.+):(%d+)$")
-	local listend = socket.listen(jip, tonumber(jport), 128)
-	_INFO_F("jlogin open listen:%s:%s", jip, jport)
+	-- 监听客户端接入地址：:: 双栈（IPv4/IPv6 通吃），端口取自中心库 server_config.jlogin_port
+	if not HOST_ENV.jlogin_port then
+		error("jlogin host must config jlogin_port")
+	end
+	local jport = tonumber(HOST_ENV.jlogin_port)
+	local listend = socket.listen("::", jport, 128)
+	_INFO_F("jlogin open listen:[::]:%s", jport)
 
 	socket.start(listend, function (newsd, addr)
 		skynet.fork(function ()

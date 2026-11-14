@@ -234,17 +234,11 @@ EOF
 
 
 # ###################### 服务器节点配置 ######################
-# node_name 节点类型名称（user、cross、adhoc、center、judge）
-# ipport 必填字段，每个节点的用途会有差异
-# judge_ipport judge节点必须设置该字段
-# jlogin 设置 "0" 则不启动，若是 ip:port 则表示启动
-# is_startup_example 或者 is_startup_center，当cross节点则选填
-# is_startup_center center节点必须设置字段
-
-# 节点范围
-# user 可包含 judge
-# cross 可包含 adhoc、center
-# adhoc、center、judge 可独立看需求、情况来
+# node_name 节点类型名称（user、cross、jlogin）
+# ip   对外通告地址（他节点/客户端拨入用），本机监听统一绑定 :: 双栈，不绑定该地址
+# port 监听端口
+# jlogin_port 仲裁登录服务监听端口（宿主节点必填，其余节点填 ""）
+# is_start_xxx：0 不启动 / 1 本节点启动 / 具体 server_id 指向宿主节点
 mysql -hlocalhost -uroot -proot $dbname << EOF 2>/dev/null
 CREATE TABLE server_config (
 	cluster_no int unsigned not null comment '集群编号',
@@ -252,8 +246,9 @@ CREATE TABLE server_config (
 
 	node_name varchar(32) not null comment '节点类型名称',
 
-	ipport varchar(32) not null comment '监听地址',
-	jlogin_ipport varchar(32) not null comment '仲裁登录服务地址',
+	ip varchar(64) not null comment '对外通告地址(他节点/客户端拨入用)',
+	port int unsigned not null comment '监听端口',
+	jlogin_port varchar(16) not null comment '仲裁登录服务监听端口',
 
 	is_start_jlogin int unsigned not null comment '是否开启仲裁登录服务',
 	is_start_display int unsigned not null comment '启动display',

@@ -21,7 +21,7 @@ local SERVICE_CLUSTERNAME = assert(SERVICE_CLUSTERNAME)
 local SERVICE_MAP = assert(SERVICE_MAP)
 
 mod_call = {}
--- mod_send = {}
+mod_send = {}
 
 local function isSameServer(serverId)
 	assert(serverId)
@@ -130,9 +130,76 @@ local function initModCall()
 	})
 end
 
--- local function ModSend()
-	
--- end
+-- rpc.mod_send.服务名[区服编号].模块名.函数名(参数1, ....)  -- 通知消息(不等待返回)
+local function initModSend()
+	local cache = {}
+	local self_cache = {}
+	local self_cache2 = {}
+	local other_cache = {}
+	local other_cache2 = {}
+	local other_cache3 = {}
+	local function __newIndexFun(_, key, val)
+		error(string.format("not modify key[%s] val[%s]", key, val))
+	end
+	setmetatable(mod_send, {
+		__index = function (_, svr)
+			if not cache[svr] then
+				-- service的检查校验
+				local addr = assert(isVaildSvr(svr))
+				cache[svr] = setmetatable({}, {
+					__index = function (_, sidOrmod)
+						local serverId = tonumber(sidOrmod)
+						if serverId and isOtherNode(serverId) then
+							local clustername = assert(getClusterName(svr, serverId))
+							-- 跨服发消息(校验是否为本服，若是则禁止 或者 走的skynet.send or call)
+							if not other_cache[serverId] then
+								other_cache[serverId] = setmetatable({}, {
+									__index = function (_, modName)
+										if not other_cache2[modName] then
+											other_cache2[modName] = setmetatable({}, {
+												__index = function (_, funcName)
+													if not other_cache3[funcName] then
+														other_cache3[funcName] = function (...)
+															return PROXYSVR.GetProxy(addr, clustername, "rpc").send(modName, funcName, ...)
+														end
+													end
+													return other_cache3[funcName]
+												end,
+												__newindex = __newIndexFun,
+											})
+										end
+										return other_cache2[modName]
+									end,
+									__newindex = __newIndexFun,
+								})
+							end
+							return other_cache[serverId]
+						else
+							local modName = sidOrmod
+							if not self_cache[modName] then
+								self_cache[modName] = setmetatable({}, {
+									__index = function (_, funcName)
+										if not self_cache2[funcName] then
+											self_cache2[funcName] = function (...)
+												return PROXYSVR.GetProxy(addr, SELF_CLUSTERNAME, "rpc").send(modName, funcName, ...)
+											end
+										end
+										return self_cache2[funcName]
+									end,
+									__newindex = __newIndexFun,
+								})
+							end
+							return self_cache[modName]
+						end
+					end,
+					__newindex = __newIndexFun,
+				})
+			end
+			return cache[svr]
+		end,
+		__newindex = __newIndexFun,
+	})
+end
 
 
 -- function BindAllFunc()
@@ -165,4 +232,5 @@ function __init__()
 	-- end)
 
 	initModCall()
+	initModSend()
 end

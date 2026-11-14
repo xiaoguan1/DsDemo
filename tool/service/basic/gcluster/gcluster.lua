@@ -75,12 +75,13 @@ function MsgPack(msg)
 	return tconcat({string.pack(">I2", msg:len()), msg})
 end
 
--- 开启当前节点监听
+-- 开启当前节点监听（本机绑定 :: 双栈，IPv4/IPv6 通吃；他节点仍按 server_config 的 ip:port 拨入）
 local function nodeListen(address)
 	-- 肯定是当前节点的，所以不用代理了
-	local isOk = SyncGate(true, "listen", address)
+	local _, port = string.match(address, "^(.-):(%d+)$")
+	local isOk = SyncGate(true, "listen", "::", tonumber(port))
 	if isOk then
-		skynet.error(sformat("gcluster listen open %s", address))
+		skynet.error(sformat("gcluster listen open [::]:%s", port))
 	else
 		skynet.error("gclusterd listen open fail!")
 	end

@@ -429,7 +429,6 @@ skynet.register_protocol {
 		return netpack.filter( queue, msg, sz)
 	end,
 	dispatch = function (_, _, q, type, ...)
-		print("type ", type)
 		queue = q
 		if type then
 			MSG[type](...)

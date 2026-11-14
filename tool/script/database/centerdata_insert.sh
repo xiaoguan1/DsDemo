@@ -112,10 +112,11 @@ fi
 
 
 
+# 注：jlogin_port 仅端口生效——jlogin 监听 :: 双栈（IPv4/IPv6 通吃）
 mysql -hlocalhost -uroot -proot $dbname << EOF 2>/dev/null
-insert into server_config(cluster_no, server_id, node_name, ipport, jlogin_ipport, is_start_jlogin, is_start_display, is_start_example, is_start_center) values
-(1, 1, "user", "127.0.0.1:32526", "", 55002, 0, 55001, 0),
-(1, 55001, "cross", "127.0.0.1:32527", "", 0, 1, 1, 0),
-(1, 55002, "jlogin", "127.0.0.1:32528", "127.0.0.1:32525", 1, 0, 0, 0);
+insert into server_config(cluster_no, server_id, node_name, ip, port, jlogin_port, is_start_jlogin, is_start_display, is_start_example, is_start_center) values
+(1, 1, "user", "127.0.0.1", 32526, "", 55002, 0, 55001, 0),
+(1, 55001, "cross", "127.0.0.1", 32527, "", 0, 1, 1, 0),
+(1, 55002, "jlogin", "127.0.0.1", 32528, "32525", 1, 0, 0, 0);
 EOF
 [ $? -eq 0 ] && echo "insert table: server_config ok" || echo "insert table: server_config error";
