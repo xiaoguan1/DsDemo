@@ -1,4 +1,4 @@
-WHANDLE = Import("game/service/wgate/module/whandle.lua")
+_G.WHANDLE = Import("game/service/wgate/module/whandle.lua")
 
 -- 绑定玩家连接（token 登录成功后由 whandle 内部调用，此处保留供外部 RPC 调用）
 function ACCEPT.bind(id, uid, agent_name, agent_cn, bind_id)
