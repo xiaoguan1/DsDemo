@@ -194,6 +194,6 @@ function __init__()
 		while true do
 			skynet.sleep(60 * 100)
 			CS(SweepWorkers)
-		end 
+		end
 	end)
 end

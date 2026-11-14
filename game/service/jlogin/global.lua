@@ -12,7 +12,7 @@
 local skynet = require "skynet"
 local mysql = require "skynet.db.mysql"
 
-JHANDLE = Import("game/service/jlogin/module/jhandle.lua")
+_G.JHANDLE = Import("game/service/jlogin/module/jhandle.lua")
 local PROXYSVR = Import("game/global/rpc/proxysvr.lua")
 assert(RESPONSE)
 assert(ACCEPT)

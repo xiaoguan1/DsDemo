@@ -70,7 +70,7 @@ skynet.start(function (gate_index)
 	local gate_name = gate_index == 1 and ".WGATE" or (".WGATE" .. gate_index)
 
 	dofile "./game/global/log.lua"
-	dofile "./game/service/wgate/global.lua"
+	Import("game/service/wgate/global.lua")
 	_G.WHANDLE.WScoketToInfo = _CreateWsInfo()
 	_G.WHANDLE.GateName = gate_name
 	_G.WHANDLE.GateClusterName = SELF_CLUSTERNAME

@@ -49,11 +49,13 @@ skynet.start(function (agent_index)
 
 	if agent_index == 1 then
 		-- 实例1：管理者，管理其余 agent 实例（自身不承载玩家）
-		dofile "game/service/agent/manager.lua"
+		-- Import 首载自动调 __init__（启动缩容巡检循环），热更时数据表保留、函数覆盖
+		MANAGER = Import("game/service/agent/manager.lua")
 		_INFO_F("agent manager index:%s start ok", agent_index)
 	else
 		-- 实例2~N：worker，向管理者注册并上报负载
-		dofile "game/service/agent/worker.lua"
+		-- Import 首载自动调 __init__（向管理者注册），热更时数据表保留、函数覆盖
+		WORKER = Import("game/service/agent/worker.lua")
 		_INFO_F("agent worker index:%s start ok", agent_index)
 	end
 end)

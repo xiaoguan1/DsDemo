@@ -45,7 +45,8 @@ skynet.start(function ()
 		end
 	end)
 
-	dofile "game/service/jlogin/global.lua"
+	-- Import 首载自动调 __init__（发号器注册、登录回调注入、定时清理）
+	Import("game/service/jlogin/global.lua")
 	-- 监听客户端接入地址：:: 双栈（IPv4/IPv6 通吃），端口取自中心库 server_config.jlogin_port
 	if not HOST_ENV.jlogin_port then
 		error("jlogin host must config jlogin_port")
@@ -64,8 +65,6 @@ skynet.start(function ()
 		end)
 	end)
 
-	if __init__ then
-		__init__()
-	end
+	-- __init__ 已由 Import 首载自动调用（SafeImport.CallInit），无需显式调用
 	_INFO_F("jlogin start ok")
 end)
