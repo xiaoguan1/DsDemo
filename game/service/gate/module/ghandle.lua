@@ -130,7 +130,12 @@ end
 -- 处理玩家上行协议帧
 -- 消息总长度（2字节）| 协议编号（2字节）| 协议内容
 local function _Message(id, msg, msg_type)
-	assert(msg_type == MESSAGE_BINARY_TYPE)
+	-- 仅支持 binary 帧（协议约定），text 帧直接断开
+	if msg_type ~= MESSAGE_BINARY_TYPE then
+		_ERROR_F("sid:%s recv non-binary frame type:%s, close", id, tostring(msg_type))
+		websocket.close(id, 4000, "binary only")
+		return
+	end
 	local sinfo = WScoketToInfo[id]
 	if not sinfo then
 		websocket.close(id, 4000, "sid not exist")

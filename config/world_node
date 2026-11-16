@@ -38,7 +38,8 @@ wsocket_port = 30001
 max_wscoket_count = 5000
 
 -- 压测：true 时起服后自动跑 perf 服务（500 实体 / 100 帧验收）
-perf_auto = true
+-- 常规起服保持 false；一键验收由 tool/script/accept.sh 生成临时配置打开
+perf_auto = false
 perf_n = 500		-- 压测实体数
 perf_frames = 100	-- 压测帧数（每帧全部实体各移动一次）
 perf_step = 10		-- 每步随机位移幅度
