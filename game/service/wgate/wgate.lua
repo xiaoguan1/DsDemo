@@ -86,7 +86,7 @@ skynet.start(function (gate_index)
 		end
 	end)
 
-	local listend = socket.listen("0.0.0.0", wsocket_port, 128)
+	local listend = socket.listen("::", wsocket_port, 128)
 	_INFO_F("wgate:%s open listen:%s", gate_name, wsocket_port)
 
 	-- 向 jlogin 注册本网关监听地址并维持心跳（登录决策时挑选存活网关下发）
