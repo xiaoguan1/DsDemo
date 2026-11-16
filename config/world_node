@@ -1,0 +1,44 @@
+-- 无缝世界单节点配置（M1：1 个 Cell 服务 + 九宫格 AOI + gate 路由）
+-- 启动：./skynet/skynet config/world_node
+
+thread = 8 -- 工作线程数
+cpath = "./skynet/cservice/?.so"
+bootstrap = "snlua bootstrap"
+
+start = "main" -- 启动入口（tool/service/startup/main.lua）
+harbor = 0 -- 单节点模式
+
+-- lua配置
+lualoader = "./skynet/lualib/loader.lua"
+
+luaservice = "./tool/service/startup/?.lua;" ..	-- 起服相关
+			"./game/service/?/?.lua;" ..			-- 游戏玩法逻辑服务（gate/cell/perf）
+			"./skynet/service/?.lua"			-- skynet内置服务
+
+lua_path = "./lualib/?.lua;" ..
+			"./skynet/lualib/?.lua;" ..
+			"./skynet/lualib/?/init.lua;" ..
+			"./game/global/?.lua"		-- proto 协议定义等全局模块
+
+lua_cpath = "./luaclib/?.so;" .. "./skynet/luaclib/?.so;" .. "./tool/cplugins-so/?.so"
+
+profile = true
+profile_cmd = true
+
+preload = "tool/luaplugins/preload.lua"
+
+node_name = "world"
+
+-- 日志
+log_stdin = true	-- true:控制台打印日志
+is_testserver = true
+
+-- 网关监听
+wsocket_port = 30001
+max_wscoket_count = 5000
+
+-- 压测：true 时起服后自动跑 perf 服务（500 实体 / 100 帧验收）
+perf_auto = true
+perf_n = 500		-- 压测实体数
+perf_frames = 100	-- 压测帧数（每帧全部实体各移动一次）
+perf_step = 10		-- 每步随机位移幅度
