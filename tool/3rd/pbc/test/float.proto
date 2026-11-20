@@ -1,0 +1,5 @@
+syntax = "proto2";
+message real {
+	optional float f = 1;
+	optional double d = 2;
+}

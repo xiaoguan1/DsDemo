@@ -1175,17 +1175,24 @@ load_proto(const char *key) {
 int
 clearone_proto(const char *key) {
   if (CC.L == NULL)
-    return 1;
+    return 0;
 
   lua_State *L;
+  int found;
   SPIN_LOCK(&CC)
     L = CC.L;
     lua_pushstring(L, key);
-    lua_pushnil(L);
-    lua_rawset(L, LUA_REGISTRYINDEX);
+    lua_rawget(L, LUA_REGISTRYINDEX);   /* stack: value */
+    found = lua_touserdata(L, -1) != NULL;
+    lua_pop(L, 1);
+    if (found) {
+      lua_pushstring(L, key);           /* stack: key */
+      lua_pushnil(L);                   /* stack: key nil */
+      lua_rawset(L, LUA_REGISTRYINDEX);
+    }
   SPIN_UNLOCK(&CC)
 
-  return 0;
+  return found;
 }
 
 static const void *
@@ -1318,10 +1325,9 @@ static int cache_clearone(lua_State *L) {
   if (fname == NULL)
     luaL_error(L, "please input file name!");
 
-  if (clearone_proto(fname))
-    luaL_error(L, "%s clearone fail!", fname);
+  lua_pushboolean(L, clearone_proto(fname));   /* 1=缓存存在且已清空 0=缓存不存在 */
 
-  return 0;
+  return 1;
 }
 
 // add guanguowei

@@ -171,7 +171,9 @@ end
 function command.UPDATE_FILES(address, updatefiles)
 	for _, files in pairs(updatefiles or {}) do
 		for _, f in pairs(files) do
-			cc.clearone(f)
+			if not cc.clearone(f) then
+				skynet.error("%s clearone fail, may be not exists!", f)
+			end
 		end
 	end
 	for k in pairs(services) do

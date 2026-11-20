@@ -1,0 +1,46 @@
+syntax = "proto2";
+
+package role;
+
+// 10001 C->S 进入世界：uid 留空则由服务端分配（对应旧 payload = uid 文本，可为空串）
+message C2s_enter_world{
+    optional string uid = 1;
+}
+
+// 20001 S->C 进入世界结果（对应旧 payload = 文本 "0:uid:x:y"）
+message S2c_enter_result{
+    required uint32 uid = 1;
+    required float x = 2;
+    required float y = 3;
+}
+
+// 10002 C->S 移动上报（对应旧 payload = >ff 或 >ffffI4，vx/vy/t 可缺省）
+message C2s_move{
+    required float x = 1;
+    required float y = 2;
+    optional float vx = 3;
+    optional float vy = 4;
+    optional int32 t = 5;
+}
+
+// 20002 S->C 实体进入视野（对应旧 payload = >I4ff uid,x,y）
+message S2c_entity_enter{
+    required uint32 uid = 1;
+    required float x = 2;
+    required float y = 3;
+}
+
+// 20003 S->C 实体离开视野（对应旧 payload = >I4 uid）
+message S2c_entity_leave{
+    required uint32 uid = 1;
+}
+
+// 20004 S->C 实体移动（对应旧 payload = >I4ffffI4 uid,x,y,vx,vy,t）
+message S2c_entity_move{
+    required uint32 uid = 1;
+    required float x = 2;
+    required float y = 3;
+    optional float vx = 4;
+    optional float vy = 5;
+    optional int32 t = 6;
+}

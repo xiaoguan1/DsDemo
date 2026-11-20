@@ -1,17 +1,59 @@
--- 前后端协议编号定义（无缝世界 M1，纯二进制帧）
--- 帧格式：消息总长度(2B) | 协议编号(2B) | 协议内容 —— 大端，websocket binary
--- 详见 M1_CLIENT_SPEC.md
+-- 协议表封装（每个服务各加载一份：协议表 + 反向索引 + protobuf 编解码）
+-- 数据来源：protocol/protomap.lua（由 protocol/gen_proto.lua 自动生成，禁止手改）
+-- 热更：本模块被 Update 时会重新 dofile protomap.lua 并重建反向索引
+local protobuf = require "protobuf"
 
-local proto = {}
+-- 重新加载协议表（写入当前服务的全局环境），保证热更后拿到的是最新内容
+dofile("protocol/protomap.lua")
+local PROTOMAP = assert(_G.PROTOMAP, "protocol/protomap.lua PROTOMAP nil")
 
--- 上行 C2S
-proto.C2S_ENTER = 10001	-- C->S 进入世界（payload = uid 文本，可为空串由服务端分配）
-proto.C2S_MOVE = 10002	-- C->S 移动上报（>ff 或 >ffffI4）
+-- 协议编号 -> 协议名（上行按帧头 proto_id 分发用）
+local ID2PROTO = {}
+for name, body in pairs(PROTOMAP) do
+	ID2PROTO[body.id] = name
+end
 
--- 下行 S2C
-proto.S2C_ENTER_RESULT = 20001	-- S->C 进入世界结果（payload = "0:uid:x:y" 文本）
-proto.S2C_ENTITY_ENTER = 20002	-- S->C 实体进入视野（payload = >I4ff uid,x,y）
-proto.S2C_ENTITY_LEAVE = 20003	-- S->C 实体离开视野（payload = >I4 uid）
-proto.S2C_ENTITY_MOVE = 20004	-- S->C 实体移动（payload = >I4ffffI4 uid,x,y,vx,vy,t）
+-- 按协议编号查协议名（查不到返回 nil）
+function NameById(proto_id)
+	return ID2PROTO[proto_id]
+end
 
-return proto
+-- 按协议名查协议定义 { desc, type, id, request, response }
+function Body(name)
+	return PROTOMAP[name]
+end
+
+-- 按协议名查协议编号
+function Id(name)
+	local body = PROTOMAP[name]
+	return body and body.id
+end
+
+-- 解码上行 request（协议没有 request 或 payload 为空时返回空表）
+function DecodeRequest(name, payload)
+	local body = PROTOMAP[name]
+	if not body or not body.request then
+		return
+	end
+	if not payload or payload == "" then
+		return {}
+	end
+	local data, err = protobuf.decode(body.request, payload)
+	if not data then
+		return nil, err
+	end
+	return data
+end
+
+-- 编码下行 response
+function EncodeResponse(name, data)
+	local body = PROTOMAP[name]
+	if not body or not body.response then
+		return
+	end
+	local isOk, out = pcall(protobuf.encode, body.response, data or {})
+	if not isOk then
+		return nil, out
+	end
+	return out
+end

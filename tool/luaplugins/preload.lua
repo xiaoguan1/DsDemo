@@ -37,6 +37,7 @@ end
 -- 宏定义
 _G.MACRO_FILES = {
 	"game/global/macro/common.lua",
+	"game/global/macro/namedsvr.lua",
 	"game/global/macro/fenv.lua",
 	"game/global/macro/color.lua",
 }

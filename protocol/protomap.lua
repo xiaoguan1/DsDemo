@@ -1,0 +1,19 @@
+----- auto generate file, please do not modify -----
+PROTOMAP = {
+	["entity_leave"] = { desc = "实体离开视野（原 20003）", type = "push", id = 1,
+		response = "role.S2c_entity_leave",
+	},
+	["entity_enter"] = { desc = "实体进入视野（原 20002）", type = "push", id = 2,
+		response = "role.S2c_entity_enter",
+	},
+	["move"] = { desc = "移动上报（原 10002）", type = "notify", id = 3,
+		request = "role.C2s_move",
+	},
+	["entity_move"] = { desc = "实体移动（原 20004）", type = "push", id = 4,
+		response = "role.S2c_entity_move",
+	},
+	["enter_world"] = { desc = "进入世界（原 10001 请求 / 20001 响应）", type = "response", id = 5,
+		request = "role.C2s_enter_world",
+		response = "role.S2c_enter_result",
+	},
+}

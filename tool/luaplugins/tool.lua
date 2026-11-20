@@ -4,6 +4,7 @@
 
 ----------------------------
 
+local json = require "cjson"
 local pcall = pcall
 local pairs = pairs
 local ipairs = ipairs
@@ -280,7 +281,9 @@ function tool.serialise(value, depth, visited)
 	visited = visited or {}
 
 	local typ = type(value)
-	if typ == "string" then
+	if value == json.null then
+		error("tool.serialise: json.null is not supported")
+	elseif typ == "string" then
 		return ("%q"):format(value)
 	elseif typ == "nil" or
 			typ == "boolean"
