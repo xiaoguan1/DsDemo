@@ -58,6 +58,7 @@ START_PLAY_SERVICE = {
 		"protosvr",
 		"gamelog",
 		"stimer",
+		-- "dbserver",
 		"gcluster",
 		"memserver",		-- 玩法状态与实例注册表的存储，必须先于玩法实例就绪
 	},
