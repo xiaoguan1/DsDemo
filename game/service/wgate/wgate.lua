@@ -4,6 +4,8 @@ local websocket = require "http.websocket"
 local tdump = tool.dump
 local SERVICE_NAME = SERVICE_NAME
 
+local gate_index = ...
+
 ACCEPT = {}
 RESPONSE = {}
 
@@ -61,7 +63,15 @@ skynet.register_protocol {
 	pack = skynet.pack,
 }
 
-skynet.start(function (gate_index)
+-- 登录模块经 dbserver 的 db 协议访问中心库账号表（按 uid/phone 哈希选 dbcell）
+skynet.register_protocol {
+	name = "db",
+	id = skynet.PTYPE_DB,
+	pack = skynet.pack,
+	unpack = skynet.unpack,
+}
+
+skynet.start(function ()
 	gate_index = tonumber(gate_index) or 1
 
 	-- 无状态多实例：端口按实例序号错开（30001、30011、30021...）
@@ -74,6 +84,11 @@ skynet.start(function (gate_index)
 	_G.WHANDLE.WScoketToInfo = _CreateWsInfo()
 	_G.WHANDLE.GateName = gate_name
 	_G.WHANDLE.GateClusterName = SELF_CLUSTERNAME
+	_G.WHANDLE.GateIndex = gate_index
+	_G.WHANDLE.IsLoginGate = (gate_index == 1)	-- .WGATE 承担出生校验与 socket 分发
+	if gate_index == 1 then
+		WLOGIN.InitUid()	-- 玩家 uid 由登录网关生成
+	end
 
 	skynet.dispatch("lua", function(session, source, cmd, ...)
 		local f

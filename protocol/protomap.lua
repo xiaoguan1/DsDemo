@@ -16,4 +16,12 @@ PROTOMAP = {
 		request = "role.C2s_enter_world",
 		response = "role.S2c_enter_result",
 	},
+	["account_login"] = { desc = "账号登录（出生校验）", type = "response", id = 6,
+		request = "account.C2s_login",
+		response = "account.S2c_login",
+	},
+	["account_create"] = { desc = "账号创角确认", type = "response", id = 7,
+		request = "account.C2s_create",
+		response = "account.S2c_create",
+	},
 }

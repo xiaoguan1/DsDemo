@@ -11,10 +11,6 @@ local CENTER_DATABASE = assert(load("return " .. skynet.getenv("centerdatadb_inf
 
 local host_id = assert(tonumber(skynet.getenv("server_id")))
 local cluster_no = assert(tonumber(skynet.getenv("cluster_no")))
-local merge_hosts = skynet.getenv("merge_hosts")
-if merge_hosts then
-	merge_hosts = assert(load("return " .. merge_hosts))()
-end
 
 -- 连接数据库（注意：协程会堵塞）
 local function _GetDb()
@@ -42,7 +38,22 @@ local function _GetDb()
 end
 
 local selectSql_1 = "select * from server_config where cluster_no = %d;"
-local selectSql_2 = "select * from server_config where cluster_no = %d and server_id = %d;"
+
+-- 解析 is_start_xxx 列：列名即服务名，值为 1 表示本行节点启动该 adhoc 服务（0/空为不启动）
+-- normal 服务按节点启动表在代码内固定，不经过数据库
+-- 返回：start_service —— 服务名 -> 本节点 ipport
+local IS_START_MATCH = "^is_start_([%w_]+)$"
+local function parseStartService(row, nodeName)
+	local aStartService = {}
+	local adhocMap = ADHOC_SERVICE_MAP[nodeName] or {}
+	for colName, value in pairs(row) do
+		local svrname = string.match(colName, IS_START_MATCH)
+		if svrname and adhocMap[svrname] and (tonumber(value) or 0) > 0 then
+			aStartService[svrname] = row.ipport
+		end
+	end
+	return aStartService
+end
 
 local function getAllNodeData(db)
 	assert(db)
@@ -70,64 +81,22 @@ local function getAllNodeData(db)
 
 	local SERVER_CONFIG = {}	-- 全部区服的配置，包括自己
 
-	local startSvc = {}
-	local selfIpPort = hostDbRes.ipport
 	local hostConfig = {	-- 本服数据信息
 		server_id = host_id,
 		nodename = nodename,
-		ipport = selfIpPort,
-		jlogin_ipport = hostDbRes.jlogin_ipport ~= "" and hostDbRes.jlogin_ipport or nil,
-		start_service = startSvc
+		ipport = hostDbRes.ipport,
+		start_service = parseStartService(hostDbRes, nodename),	-- 寄生服务（adhoc）的启动列表：服务名 -> ipport
 	}
-	for key, val in pairs(hostDbRes) do
-		local isOk, sIdx, eIdx = string.beginswith(key, "is_start_")
-		if isOk then
-			local svriceName = string.sub(key, eIdx + 1)
-			if val == 1 then
-				if not ADHOC_SERVICE_MAP[nodename][svriceName] then
-					return false, sformat("ADHOC_SERVICE_MAP11 [%s] [%s] not find!", nodename, svriceName)
-				end
-				startSvc[svriceName] = selfIpPort
-			elseif val ~= 0 then
-				local res = otherDbRes[val]
-				if val == host_id or not res then
-					return false, sformat("centerdatabase server_config[%s] error! %s ~= %s", host_id)
-				end
-				startSvc[svriceName] = res.ipport
-			end
-		end
-	end
 	SERVER_CONFIG[host_id] = hostConfig
 
 	-- 其他服数据信息
 	for serverId, config in pairs(otherDbRes) do
-		local startSvc = {}
-		local serverConfig = {
+		SERVER_CONFIG[serverId] = {
 			server_id = serverId,
 			nodename = config.node_name,
 			ipport = config.ipport,
-			jlogin_ipport = config.jlogin_ipport ~= "" and config.jlogin_ipport or nil,
-			start_service = startSvc
+			start_service = parseStartService(config, config.node_name),
 		}
-		for key, val in pairs(config) do
-			local isOk, sIdx, eIdx = string.beginswith(key, "is_start_")
-			if isOk then
-				local svriceName = string.sub(key, eIdx + 1)
-				if val == 1 then
-					if not ADHOC_SERVICE_MAP[config.node_name][svriceName] then
-						return false, sformat("ADHOC_SERVICE_MAP22 [%s] [%s] not find!", config.node_name, svriceName)
-					end
-					startSvc[svriceName] = config.ipport
-				elseif val ~= 0 then
-					local res = otherDbRes[val] or SERVER_CONFIG[val]
-					if (val == config.server_id) or not res then
-							return false, sformat("centerdatabase server_config[%s] error! %s ~= %s", config.server_id)
-					end
-					startSvc[svriceName] = res.ipport
-				end
-			end
-		end
-		SERVER_CONFIG[serverId] = serverConfig
 	end
 
 	-- 校验SERVER_CONFIG的网络地址唯一性

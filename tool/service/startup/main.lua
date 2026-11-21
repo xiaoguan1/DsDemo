@@ -5,7 +5,7 @@ local util = require "util.core"
 local posix = require "posix"
 local dpcluster = require "dpcluster.core"
 local queue = require "queueplus"
-local nodename = assert(skynet.getenv("node_name"))
+local nodename = assert(skynet.getenv("node_name"))	-- 节点名即节点类型（user/play）
 CS = queue()
 
 local table = table
@@ -48,75 +48,45 @@ skynet.start(function ()
 	if not hostConfig then
 		abort(SERVER_CONFIG)
 	end
-	print("hostConfig ", tool.dumptree(hostConfig), SERVER_CONFIG)
 	skynet.setenv("host_env", tool.dumptree(hostConfig))
 	skynet.setenv("server_config", tool.dumptree(SERVER_CONFIG))
 	doGamePreload()
 
 	dofile "./game/global/log.lua"
 	dofile "game/global/dblog.lua"
-	for _, svrname in ipairs(START_USER_SERVICE.unique) do
+
+	-- 节点名即节点类型（user/play），按节点名选择启动表
+	local startOrder = assert(NODE_START_SERVICE[nodename], "unknown node_name: " .. nodename)
+
+	for _, svrname in ipairs(startOrder.unique) do
 		local isOk, id = pcall(skynet.uniqueservice, svrname)
 		if not isOk or not id then
 			abort(string.format("start service[%s] fail", svrname))
 		end
-		skynet.name(BASIC_SERVICE_MAP[svrname].named, id)
+		skynet.name(ALL_SERVICE_MAP[svrname].named, id)
 	end
 
-	for _, svrname in ipairs(START_USER_SERVICE.normal) do
-		-- 无状态多实例服务：按配置数量启动多个实例，便于水平扩展
-		local svr_num
-		if svrname == "wgate" then
-			svr_num = tonumber(skynet.getenv("gateway_num")) or 1
-		elseif svrname == "agent" then
-			svr_num = tonumber(skynet.getenv("agent_default_num")) or 1
-		end
-		if svr_num then
-			for i = 1, svr_num do
-				local id = skynet.newservice(svrname, i)
-				if not id then
-					abort(string.format("start service[%s] fail", svrname))
-				end
-				local named = NORMAL_SERVICE_MAP[nodename][svrname].named
-				if i == 1 then
-					skynet.name(named, id)
-				else
-					skynet.name(named .. i, id)
-				end
-			end
-		else
-			local id = skynet.newservice(svrname)
+	-- 一般服务：按节点启动表 normal 段在代码内固定，不经过数据库
+	-- 实例数取 ALL_SERVICE_MAP.default_cnt（缺省1），实例命名 .XXX/.XXX2/...
+	for _, svrname in ipairs(startOrder.normal or {}) do
+		local namedData = assert(ALL_SERVICE_MAP[svrname],
+			string.format("normal service[%s] not in ALL_SERVICE_MAP", svrname))
+		assert(not namedData.unique,
+			string.format("unique service[%s] can not in normal list", svrname))
+		local svrNum = namedData.default_cnt or 1
+		for i = 1, svrNum do
+			local id = skynet.newservice(svrname, i)
 			if not id then
 				abort(string.format("start service[%s] fail", svrname))
 			end
-			skynet.name(NORMAL_SERVICE_MAP[nodename][svrname].named, id)
+			skynet.name((i == 1) and namedData.named or (namedData.named .. i), id)
 		end
 	end
-
-	-- 启动寄生服务
-	local startService = hostConfig.start_service
-	local function startOterSvr(nodeSvrSeq)
-		for _, svrname in ipairs(nodeSvrSeq) do
-			if startService[svrname] == SELF_IPPORT then
-				local id = skynet.newservice(svrname)
-				if not id then
-					abort(string.format("start service[%s] fail", svrname))
-				end
-				skynet.name(ADHOC_SERVICE_MAP[nodename][svrname].named, id)
-			end
-		end
-	end
-	startOterSvr(START_USER_SERVICE.adhoc)
 
 	-- _OpenLogPath()
 
-	-- print("HOST_ENV ", tool.dumptree(HOST_ENV))
-	-- print("SERVER_CONFIG:", tool.dumptree(SERVER_CONFIG))
-	-- print("BASIC_SERVICE_MAP ", tool.dumptree(BASIC_SERVICE_MAP))
-	-- print("ADHOC_SERVICE_MAP ", tool.dumptree(ADHOC_SERVICE_MAP))
-	-- print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
-	_DEBUG("1111111111111")
-	_INFO("2222222222222")
-	-- print("ADHOC_SERVICE_MAP ", tool.dumptree(ADHOC_SERVICE_MAP))
-	-- print("NORMAL_SERVICE_MAP ", tool.dumptree(NORMAL_SERVICE_MAP))
+	print("hostConfig ", tool.dumptree(hostConfig))
+	print("SERVER_CONFIG:", tool.dumptree(SERVER_CONFIG))
+	print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
+	_INFO_F("node[%s] server_id[%s] start ok", nodename, host_id)
 end)

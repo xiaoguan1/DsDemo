@@ -31,11 +31,18 @@ end
 
 function Call_ModSave(saveName, salData)
 	assert(saveName and salData)
-	DBSERVER.call.modsave(saveName, salData)
+	return DBSERVER.call.modsave(saveName, salData)
 end
 
 function Call_ModSaveReplace(saveName, salData)
 	assert(saveName and salData)
-	DBSERVER.call.modsave_replace(saveName, salData)
+	return DBSERVER.call.modsave_replace(saveName, salData)
+end
+
+-- 批量保存（单事务）：saveList = { {saveName, salData}, ... }
+-- key 仅用于路由哈希，保证同批落到同一个 dbcell
+function Call_ModSaveMulti(saveList)
+	assert(type(saveList) == "table" and #saveList > 0)
+	return DBSERVER.call.modsave_multi("module_batch", saveList)
 end
 

@@ -39,7 +39,7 @@ GAME_CONFIG=./config/main_node	# 游戏服启动配置
 
 
 echo "选择题:"
-select w in 重启游戏服 启动游戏服 关闭游戏服 热更游戏服 启动跨服 编译并启动游戏 编译协议
+select w in 重启游戏服 启动游戏服 关闭游戏服 热更游戏服 启动玩法服 编译并启动游戏 编译协议
 do
 	case $w in
 		启动游戏服)
@@ -50,8 +50,8 @@ do
 			sh $STOP_SH $GAME_CONFIG
 			break
 			;;
-		启动跨服)
-			./skynet/skynet ./config/cross_node &
+		启动玩法服)
+			./skynet/skynet ./config/play_node &
 			break
 			;;
 		重启游戏服)

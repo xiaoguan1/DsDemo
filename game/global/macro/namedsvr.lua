@@ -1,50 +1,35 @@
 -- 节点的宏文件
 
--- 每个节点的基础服务
-BASIC_SERVICE_MAP = {
-	["protosvr"] = {named = ".PROTOSVR"},		-- 协议服务，加载协议和更新协议
-	["gamelog"] = {named = ".GAMELOG"},
-	["stimer"] = {named = ".STIMER"},
-	["dbserver"] = {named = ".DBSERVER"},
-	["gcluster"] = {named = ".GCLUSTER"},
-	["manage"] = {named = ".MANAGE"},
-}
-
-USER_NODE = "user"		-- 玩家服节点
-CROSS_NODE = "cross"	-- 跨服节点
-
-NODE_LIST = { USER_NODE, CROSS_NODE, }
-
--- 相对自由，可以在cross服启动，也可以在user节点启动。只要是中心服数据库设置了。
--- host_node：宿主节点限制。以example服务为例，允许启动该服务的节点只能是 cross
--- unique为true，则表示该服务在整个集群中是唯一的
--- node 其目的是为了在rpc.lua可以方便地根据服务名称获取网络地址
+-- 全局服务登记表
+-- unique = true：基础服务，按节点名在代码内固定（见各节点启动表的 unique 段），不走数据库驱动
+-- 其余为一般服务：某节点是否启动由中心库 server_config 的 is_start_<服务名> 列决定，
+-- 实例数取 default_cnt（缺省 1）
 ALL_SERVICE_MAP = {
-	-- example玩法
-	["example"] = { named = ".EXAMPLE" },
-
-
-	["display"] = { named = ".DISPLAY" },
-
-	-- 无状态网关服务（可按 gateway_num 多实例部署）
-	["wgate"] = { named = ".WGATE" },
-
-	-- 仲裁登录服务（仲裁玩家登录那个user节点）
-	["jlogin"] = { named = ".JLOGIN" },
-
-	-- 中心服服务
-	-- ["..."] = { named = "...." },
-
-	-- 玩家服的服务
-	-- ["mail"] = { named = ".MAIL"},
-	-- ["ugate"] = { named = ".UGATE"},	-- 登录服务(会代理起到agent服务)
-	["agent"] = { named = ".AGENT"},	-- 玩家逻辑服(无状态，多实例，可动态扩缩容)
+	["protosvr"] = {named = ".PROTOSVR", unique = true},		-- 协议服务，加载协议和更新协议
+	["gamelog"] = {named = ".GAMELOG", unique = true},
+	["stimer"] = {named = ".STIMER", unique = true},
+	["dbserver"] = {named = ".DBSERVER", unique = true},
+	["gcluster"] = {named = ".GCLUSTER", unique = true},
+	["manage"] = {named = ".MANAGE", unique = true},
+	["memserver"] = {named = ".MEMSERVER", unique = true},			-- 内存服务（玩法状态、实例注册表等）	
+	["wgate"] = {named = ".WGATE", default_cnt = 8},	-- 网关多实例：1 为登录网关，登录后按连接数分流
+	["agent"] = {named = ".AGENT", default_cnt = 8},
+	["example"] = {named = ".EXAMPLE"},						-- 玩法服务骨架（模板），可删除
 }
 
-CLUSTER_NAME_MATCH = "^(%a+)@(%d+)_(%d+)$"	-- 解析集群节点名称
+-- 节点名即是节点类型，取值固定；多个 play 进程共用节点名 play，
+-- 进程由 cluster_no + node_name + server_id 共同区分
+USER_NODE = "user"		-- 玩家服节点
+PLAY_NODE = "play"		-- 玩法节点（无状态玩法实例池，N节点×1实例弹性扩容）
+
+NODE_LIST = { USER_NODE, PLAY_NODE, }
+
+CLUSTER_NAME_MATCH = "^(%w+)@(%d+)_(%d+)$"	-- 解析集群节点名称
 CLUSTER_NAME_FMT = "%s@%s_%s"				-- 集群名称格式
 
 --[[ user节点的启动服务顺序表 ]]
+-- 基础服务（unique段）按节点名在代码内固定；normal 为一般服务白名单，
+-- 一般服务：按节点启动表 normal 段在代码内固定，实例数取 ALL_SERVICE_MAP.default_cnt
 START_USER_SERVICE = {
 	-- 基础服务设施
 	unique = {
@@ -53,67 +38,60 @@ START_USER_SERVICE = {
 		"gamelog",
 		"stimer",
 		"dbserver",
+		"memserver",
 		"gcluster"
 	},
 
-	-- 一般服务
+	-- 一般服务白名单（是否启动由 is_start_<服务名> 列决定，实例数取 default_cnt）
 	normal = {
-		"display",
 		"wgate",
 		"agent",
 	},
-
-	-- 相对自由的服务，可根据数据库配置决定是否启动
-	adhoc = {
-		"jlogin",
-	}
 }
 
---[[ cross节点的启动服务顺序表 ]]
-START_CROSS_SERVICE = {
+--[[ play节点的启动服务顺序表 ]]
+-- 与user的差异：无dbserver（玩法不直接读写MySQL，玩家数据经agent、玩法数据走memserver）；新增memserver
+START_PLAY_SERVICE = {
 	-- 基础服务设施
 	unique = {
 		"manage", 		-- 第一个启动，避免启动失败导致外部无法操作。
 		"protosvr",
 		"gamelog",
 		"stimer",
-		"dbserver",
-		"gcluster"
+		"gcluster",
+		"memserver",		-- 玩法状态与实例注册表的存储，必须先于玩法实例就绪
 	},
 
-	-- -- 一般服务
-	-- normal = {
-	-- 	"....",
-	-- },
+	-- 一般服务白名单（是否启动由 is_start_<服务名> 列决定，实例数取 default_cnt）
+	-- 接入新玩法时在此登记服务名
+	normal = {
+	},
 
-	-- 相对自由的服务，可根据数据库配置决定是否启动
+	-- 相对自由的服务，可根据数据库配置决定是否启动（is_start_<服务名> 列开关）
 	adhoc = {
-		"display",
 		"example",
 	},
+}
 
+-- 节点名（即节点类型） -> 启动服务顺序表
+NODE_START_SERVICE = {
+	[USER_NODE] = START_USER_SERVICE,
+	[PLAY_NODE] = START_PLAY_SERVICE,
 }
 
 -- 记录各个节点的自由服务信息
 ADHOC_SERVICE_MAP = {}
 
--- 记录各个节点的一般服务信息
-NORMAL_SERVICE_MAP = {}
-
--- 按节点生成服务映射表规则
-local function genSvrMapRule(mtbl, nodename, serviceList)
-	assert(not mtbl[nodename])
-	mtbl[nodename] = {}
+-- 按节点名生成服务映射表规则
+local function genSvrMapRule(mtbl, nodeName, serviceList)
+	assert(not mtbl[nodeName])
+	mtbl[nodeName] = {}
 	for _, svrname in pairs(serviceList or {}) do
-		assert(not mtbl[nodename][svrname])
-		mtbl[nodename][svrname] = assert(ALL_SERVICE_MAP[svrname])
+		assert(not mtbl[nodeName][svrname])
+		mtbl[nodeName][svrname] = assert(ALL_SERVICE_MAP[svrname])
 	end
 end
 genSvrMapRule(ADHOC_SERVICE_MAP, USER_NODE, START_USER_SERVICE.adhoc)
-genSvrMapRule(ADHOC_SERVICE_MAP, CROSS_NODE, START_CROSS_SERVICE.adhoc)
-
-genSvrMapRule(NORMAL_SERVICE_MAP, USER_NODE, START_USER_SERVICE.normal)
-genSvrMapRule(NORMAL_SERVICE_MAP, CROSS_NODE, START_CROSS_SERVICE.normal)
+genSvrMapRule(ADHOC_SERVICE_MAP, PLAY_NODE, START_PLAY_SERVICE.adhoc)
 
 -- print("ADHOC_SERVICE_MAP ", tool.dumptree(ADHOC_SERVICE_MAP))
--- print("ADHOC_SERVICE_MAP ", tool.dumptree(NORMAL_SERVICE_MAP))

@@ -4,3 +4,5 @@ entity_enter,2
 move,3
 entity_move,4
 enter_world,5
+account_login,6
+account_create,7

@@ -128,34 +128,54 @@ local function _TestError(db)
 	print("get 不存在的key", db:get("demo:no_such_key"))
 end
 
-function Handle_Request(data)
-	skynet.error("redis test start, host = 0.0.0.0:6379")
+----------------------------------------------------------------
+-- rpc 跨节点测试：user 节点 -> play 节点的 example 服务
+-- 触发方式：wget -q -O - "http://127.0.0.1:40001/ddbug"
+--          可选参数指定目标 play 节点："http://127.0.0.1:40001/ddbug?server_id=55001"
+-- 前置条件：目标 play 行 is_start_example = 1（example 是 adhoc 服务），user/play 均已启动
+-- 返回：成功打印 example 的实例身份，失败在 manage 日志里输出原因
+----------------------------------------------------------------
+local rpc = Import("game/global/rpc/rpc.lua")	-- 装载 rpc：定义全局 mod_call 并注册 rpc 协议分发
 
-	-- connect 失败(Redis 没启动)时 pcall 兜底，避免服务报错
-	local isOk, db = pcall(redis.connect,{
-		host = "0.0.0.0",
-		port = 6379,
-		db = 0,
-		overload = true,
-		auth = "root",
-	})
-	if not isOk then
-		skynet.error("connect redis fail: " .. tostring(db))
-		return true
+-- 取一个启动了 example 的节点：adhoc 服务只有它的宿主节点会登记在 SERVICE_CLUSTERNAME
+local function _PickExampleServerId()
+	for serverId in pairs(SERVICE_CLUSTERNAME["example"] or {}) do
+		return serverId
 	end
-	-- print("===ping===", db:ping())
-	-- _TestString(db)
-	-- _TestHash(db)
-	-- _TestList(db)
-	-- _TestSet(db)
-	-- _TestZset(db)
-	-- _TestCommon(db)
-	-- _TestPipeline(db)
-	-- _TestError(db)
+end
 
-	db:disconnect()
-	skynet.error("redis test done!")
-	return true
+local function _TestRpcToExample(args)
+	local serverId = 55001
+	if not serverId then
+		serverId = _PickExampleServerId()
+	end
+	if not serverId then
+		_ERROR("ddbug rpc test: no node started example, check server_config.is_start_example")
+		return false, "no example node"
+	end
+
+	local sId2name = SERVICE_CLUSTERNAME["example"]
+	local clustername = sId2name and sId2name[serverId]
+	if not clustername then
+		_ERROR_F("ddbug rpc test: server_id[%s] not started example", serverId)
+		return false, "target not started example"
+	end
+
+	local tag = string.format("hello from %s@%s", HOST_ENV.nodename, skynet.getenv("server_id"))
+	-- 跨节点调用：rpc.mod_call.服务名[serverId].模块名.函数名(...)
+	local isOk, ret = TryCall(function ()
+		return rpc.mod_call.example[serverId].EXAMPLE.Ping(tag)
+	end)
+	if isOk then
+		_INFO_F("ddbug rpc test -> %s ok: %s", clustername, tostring(ret))
+	else
+		_ERROR_F("ddbug rpc test -> %s fail: %s", clustername, tostring(ret))
+	end
+	return isOk, ret
+end
+
+function Handle_Request(data)
+	return _TestRpcToExample(data)
 end
 
 

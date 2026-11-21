@@ -234,33 +234,36 @@ EOF
 
 
 # ###################### 服务器节点配置 ######################
-# node_name 节点类型名称（user、cross、adhoc、center、judge）
+# node_name 节点类型名称（user、play）
 # ipport 必填字段，每个节点的用途会有差异
-# judge_ipport judge节点必须设置该字段
-# jlogin 设置 "0" 则不启动，若是 ip:port 则表示启动
-# is_startup_example 或者 is_startup_center，当cross节点则选填
-# is_startup_center center节点必须设置字段
-
-# 节点范围
-# user 可包含 judge
-# cross 可包含 adhoc、center
-# adhoc、center、judge 可独立看需求、情况来
+# is_start_<服务名> 该服务是否在本节点启动（1启动/0不启动）；nodeInfo 按此列归一化启动项，
+#   一般服务实例数取 namedsvr.lua 中 ALL_SERVICE_MAP 的 default_cnt（缺省1）
+# is_start_example 是否在本节点启动示例服务 example（1启动，归一化为 adhoc 启动项）
 mysql -hlocalhost -uroot -proot $dbname << EOF 2>/dev/null
 CREATE TABLE server_config (
 	cluster_no int unsigned not null comment '集群编号',
 	server_id int unsigned not null comment '服务器编号',
 
 	node_name varchar(32) not null comment '节点类型名称',
-
 	ipport varchar(32) not null comment '监听地址',
-	jlogin_ipport varchar(32) not null comment '仲裁登录服务地址',
 
-	is_start_jlogin int unsigned not null comment '是否开启仲裁登录服务',
-	is_start_display int unsigned not null comment '启动display',
-	is_start_example int unsigned not null comment '启动玩法A',
-	is_start_center int unsigned not null comment '是否开启跨服中心服(开启则具有中心服节点身份)',
+	is_start_example int unsigned not null default 0 comment '是否启动示例服务 example',
 
 	PRIMARY KEY (cluster_no, server_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 EOF
 [ $? -eq 0 ] && echo "create table: server_config" || echo "exists table: server_config";
+
+
+mysql -hlocalhost -uroot -proot $dbname << EOF 2>/dev/null
+CREATE TABLE IF NOT EXISTS account (
+  uid varchar(32) NOT NULL COMMENT '唯一uid（util.new_uid生成）',
+  phone varchar(32) NOT NULL COMMENT '账号（手机号）',
+  server_id int NOT NULL COMMENT '出生服务器id',
+  create_time int NOT NULL COMMENT '出生时间',
+  status tinyint NOT NULL DEFAULT 0 COMMENT '0正常 1封禁',
+  PRIMARY KEY (uid),
+  UNIQUE KEY uk_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='中心库账号表';
+EOF
+[ $? -eq 0 ] && echo "create table: account" || echo "exists table: account";

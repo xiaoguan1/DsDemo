@@ -1,4 +1,25 @@
 WHANDLE = Import("game/service/wgate/module/whandle.lua")
+WLOGIN = Import("game/service/wgate/module/wlogin.lua")
+
+-- 接管其他网关移交过来的 socket（登录网关调用）
+function ACCEPT.adopt(id, addr, url, header, ctx)
+	WHANDLE.Adopt(id, addr, url, header, ctx)
+end
+
+-- 目标网关断线时注销登录网关的节点在线表
+function ACCEPT.offline(uid, epoch)
+	WLOGIN.OnOffline(uid, epoch)
+end
+
+-- 目标网关认领登录所有权（登录网关执行）
+function RESPONSE.claim(uid, epoch, gate_name, agent_name, agent_cn)
+	return WLOGIN.Claim(uid, epoch, gate_name, agent_name, agent_cn)
+end
+
+-- 登录网关的节点在线人数（调试/监控用）
+function RESPONSE.online_count()
+	return WLOGIN.OnlineCount()
+end
 
 -- 绑定玩家连接（登录仲裁服务登录成功后调用，send/call均可）
 function ACCEPT.bind(id, uid, agent_name, agent_cn)

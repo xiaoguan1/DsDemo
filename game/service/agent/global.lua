@@ -8,9 +8,9 @@ assert(CLIENT_RESPONSE)
 
 -- 实例编号与底座数量（agent.lua 启动时注入 AGENT_INDEX，已 tonumber 为数字）
 local agent_index = AGENT_INDEX
-local agent_default_num = tonumber(skynet.getenv("agent_default_num")) or 8
+local agent_default_num = ALL_SERVICE_MAP.agent.default_cnt or 8	-- 底座实例数（缩容回收判断用）
 
--- 本实例命名（与 startup/main.lua、jlogin 的命名规则保持一致）
+-- 本实例命名（与 startup/main.lua 的命名规则保持一致）
 local AgentName
 if agent_index == 1 then
 	AgentName = ".AGENT"
@@ -18,47 +18,49 @@ else
 	AgentName = ".AGENT" .. agent_index
 end
 
--- 获取登录仲裁服务所在节点
-local function GetJLoginClusterName()
-	local data = SERVICE_CLUSTERNAME and SERVICE_CLUSTERNAME["jlogin"]
-	if not data then
-		return
-	end
-	for _, cn in pairs(data) do
-		if cn then
-			return cn
-		end
-	end
-end
-
--- 本实例在线玩家表：uid -> { gate_name = ..., gate_cn = ... }
+-- 本实例在线玩家表：uid -> { gate_name = ..., gate_cn = ..., epoch = ... }
 Players = {}
 
--- 玩家分配登记（jlogin 调用；幂等：重复 bind 覆盖旧归属）
-function CLIENT_ACCEPT.bind(uid, gate_name, gate_cn)
+-- 玩家分配登记（网关/登录服务调用；幂等：重复 bind 覆盖旧归属）
+-- epoch 为登录所有权纪元：顶号后旧网关的 unbind 携带旧 epoch，不能误删新绑定
+function CLIENT_ACCEPT.bind(uid, gate_name, gate_cn, epoch)
 	local old = Players[uid]
 	if old and (old.gate_name ~= gate_name or old.gate_cn ~= gate_cn) then
 		_WARN_F("agent:%s player:%s rebind gate:%s -> %s", AgentName, uid, tostring(old.gate_name), tostring(gate_name))
 	end
-	Players[uid] = { gate_name = gate_name, gate_cn = gate_cn }
-	_INFO_F("agent:%s bind player:%s gate:%s", AgentName, uid, tostring(gate_name))
+	Players[uid] = { gate_name = gate_name, gate_cn = gate_cn, epoch = epoch }
+	_INFO_F("agent:%s bind player:%s gate:%s epoch:%s", AgentName, uid, tostring(gate_name), tostring(epoch))
 end
 
--- 玩家下线/被顶号解绑（jlogin 或 wgate 断线联动调用）
-function CLIENT_ACCEPT.unbind(uid)
-	if not Players[uid] then
+-- 玩家下线/被顶号解绑（wgate 断线联动调用）
+function CLIENT_ACCEPT.unbind(uid, epoch)
+	local info = Players[uid]
+	if not info then
+		return
+	end
+	-- 过期所有权的解绑直接忽略（顶号后旧连接可能晚于新连接断开）
+	if epoch and info.epoch and info.epoch ~= epoch then
+		_WARN_F("agent:%s ignore stale unbind uid:%s epoch:%s ~= %s",
+			AgentName, uid, tostring(epoch), tostring(info.epoch))
 		return
 	end
 	Players[uid] = nil
 	_INFO_F("agent:%s unbind player:%s", AgentName, uid)
 
+	-- 即刻落库：玩家下线时同步保存本服务所有脏模块（失败只告警，不影响下线流程）
+	if MODULE_DB then
+		local isOk, err = pcall(MODULE_DB.SaveDirtyNow)
+		if not isOk then
+			_ERROR_F("agent:%s unbind player:%s save fail:%s", AgentName, uid, tostring(err))
+		end
+	end
+
 	-- 动态缩容：仅回收编号 > 底座数量的空实例（编号1~N为底座，永驻）
 	if agent_index > agent_default_num and next(Players) == nil then
-		local jlogin_cn = GetJLoginClusterName()
-		if jlogin_cn then
-			TryCall(PROXYSVR.GetProxy(".JLOGIN", jlogin_cn, "lua").send, "agent_exit", agent_index)
-		end
 		_INFO_F("agent:%s empty and index:%s > default:%s, exit", AgentName, agent_index, agent_default_num)
+		if MODULE_DB then
+			pcall(MODULE_DB.Shutdown_SaveModule)	-- 实例退出前同步落库
+		end
 		skynet.exit()
 	end
 end
@@ -132,11 +134,19 @@ function PushProto(uid, name, data)
 	return true
 end
 
--- 当前在线玩家数（jlogin 最小连接仲裁用；pairs 计数避免 table 空洞导致 # 不准）
+-- 当前在线玩家数（登录分配时最小连接仲裁用；pairs 计数避免 table 空洞导致 # 不准）
 function RESPONSE.player_count()
 	local cnt = 0
 	for _ in pairs(Players) do
 		cnt = cnt + 1
 	end
 	return cnt
+end
+
+-- 关服落库（manage 关服流程调用）：同步保存全部模块后返回
+function RESPONSE.shutdown_save()
+	if MODULE_DB then
+		MODULE_DB.Shutdown_SaveModule()
+	end
+	return true
 end

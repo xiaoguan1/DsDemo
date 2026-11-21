@@ -1,4 +1,7 @@
 -- 模块作用：分table存盘，不用一堆数据旨在一个table里
+-- 热更说明：AllClsSave 等运行期状态为模块级全局 table，热更时保留旧引用（不会清空），
+-- 函数逻辑会被替换；但 SAVE_SPLIT_* / CHECK_SPLIT_SECORDS 等常量与 __init__ 里的
+-- 定时器不会更新，调整这些需重启节点。
 
 local skynet = require "skynet"
 local table = table
@@ -12,7 +15,7 @@ local _ERROR = _ERROR
 local _INFO_F = _INFO_F
 local ostime = os.time
 local sformat = string.format
-local is_testserver = skynet.getenv("is_testserver") == "true"
+local is_testserver = skynet.getenv("is_testserver") == true or skynet.getenv("is_testserver") == "true"
 local UTIL = Import("game/global/util.lua")
 local DB_COMMON = Import("game/global/db_common.lua")
 local nodename = assert(skynet.getenv("node_name"))
@@ -268,24 +271,18 @@ function ShutDown_SaveCls()
 	local clsName2Data = {}
 	for _, clsObj in pairs(AllClsSave) do
 		local name2data = _packData(clsObj)
-		if name2data then
-			for k, v in pairs(name2data) do
-				clsName2Data[k] = v
+		-- nil 表示单盘数据超过阈值，需要分盘后重新打包
+		local loop = 0
+		while not name2data do
+			loop = loop + 1
+			if loop > 50 then
+				error(string.format("%s do split fail", tool.dump(clsObj.__HEAD_DATA)))
 			end
-		elseif name2data == nil then
-			local loop = 0
-			while true do
-				loop = loop + 1
-				if loop > 50 then
-					error(string.format("%s do split fail", tool.dump(clsObj.__HEAD_DATA)))
-				end
-				clsObj:DoSplit(true)
-				name2data = _packData(clsObj)
-				if name2data then
-					clsName2Data[name2data] = true
-					break
-				end
-			end
+			clsObj:DoSplit(true)
+			name2data = _packData(clsObj)
+		end
+		for saveName, salData in pairs(name2data) do
+			clsName2Data[saveName] = salData
 		end
 	end
 	return clsName2Data

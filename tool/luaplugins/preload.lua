@@ -66,6 +66,9 @@ skynet.register_protocol({
 	pack = skynet.pack,
 })
 
+-- game_preload（apreload）只允许由节点启动入口（main.lua/play.lua）在
+-- host_env、server_config 写入后再设置；切勿写进 config：
+-- 各服务的 preload 早于启动入口执行，提前加载会因节点数据缺失而失败。
 local gamePreload = skynet.getenv("game_preload")
 if gamePreload then
 	dofile(gamePreload)

@@ -309,20 +309,9 @@ local function read_frame(self)
 end
 
 
-local function resolve_accept(self, options)
-    try_handle(self, "connect")
-    local code, err, url = read_handshake(self, options and options.upgrade)
-    if code then
-        local ok, s = httpd.write_response(self.write, code, err)
-        if not ok then
-            error(s)
-        end
-        try_handle(self, "close")
-        return
-    end
-
-    local header = err
-    try_handle(self, "handshake", header, url)
+-- 消息循环：握手完成后读取并分发 websocket 帧
+-- 说明（项目改动）：从 resolve_accept 中抽出，供 M.adopt（跨服务接管 socket）复用
+local function resolve_frames(self)
     local recv_count = 0
     local recv_buf = {}
     local first_op
@@ -362,6 +351,29 @@ local function resolve_accept(self, options)
             end
         end
     end
+end
+
+local function resolve_accept(self, options)
+    try_handle(self, "connect")
+    local code, err, url = read_handshake(self, options and options.upgrade)
+    if code then
+        local ok, s = httpd.write_response(self.write, code, err)
+        if not ok then
+            error(s)
+        end
+        try_handle(self, "close")
+        return
+    end
+
+    local header = err
+    try_handle(self, "handshake", header, url)
+    resolve_frames(self)
+end
+
+-- 接续已完成握手的连接（不重读、不重写握手）
+local function resolve_adopt(self, header, url)
+    try_handle(self, "handshake", header, url)
+    resolve_frames(self)
 end
 
 
@@ -497,6 +509,59 @@ function M.accept(socket_id, handle, protocol, addr, options)
         end
     end
     return true
+end
+
+
+-- 项目新增：解除本服务对 websocket 连接的跟踪（不关闭底层 socket）
+-- 场景：跨服务移交 socket 前调用，让消息循环以“已关闭”状态退出，避免误关闭已移交的 fd
+function M.detach(id)
+	local ws_obj = ws_pool[id]
+	if ws_obj then
+		ws_pool[id] = nil
+	end
+	return ws_obj ~= nil
+end
+
+
+-- 项目新增：接管一个已完成握手的 websocket 连接
+-- 场景：socket 跨服务移交（socket.abandon + socket.start）后，目标服务不重读/重写握手，
+--       直接用原握手信息恢复会话；除新增本接口外，原有 accept/connect 行为不变
+function M.adopt(socket_id, handle, protocol, addr, header, url)
+	protocol = protocol or "ws"
+	local ws_obj = _new_server_ws(socket_id, handle, protocol)
+	ws_obj.addr = addr
+	ws_obj.real_ip = header and header["x-real-ip"]
+	local on_warning = handle and handle["warning"]
+	if on_warning then
+		local isok = pcall(socket.warning, socket_id, function(id, sz)
+			on_warning(ws_obj, sz)
+		end)
+		if not isok then
+			if not _isws_closed(socket_id) then
+				_close_websocket(ws_obj)
+			end
+			return false, "connect is closed " .. socket_id
+		end
+	end
+
+	local ok, err = xpcall(resolve_adopt, debug.traceback, ws_obj, header, url)
+	local closed = _isws_closed(socket_id)
+	if not closed then
+		_close_websocket(ws_obj)
+	end
+	if not ok then
+		if err == socket_error then
+			if closed then
+				try_handle(ws_obj, "close", err)
+			else
+				try_handle(ws_obj, "error", err)
+			end
+		else
+			try_handle(ws_obj, "othererror", err)
+			return false, err
+		end
+	end
+	return true
 end
 
 

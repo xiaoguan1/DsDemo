@@ -1,7 +1,7 @@
 -- 玩家逻辑服 agent：无状态、可横向扩展
 -- 多实例规则：编号1命名为 .AGENT，编号N(N>1)命名为 .AGENT..N（与 wgate 一致）
 -- 上行链路：wgate -> agent.client_msg    下行链路：agent -> wgate.push
--- 扩缩容：jlogin 仲裁，满载时新建实例（编号>默认数），空实例（编号>默认数）自退
+-- 扩缩容：满载时新建实例（编号>默认数），空实例（编号>默认数）自退
 
 local skynet = require "skynet"
 
@@ -33,6 +33,11 @@ skynet.start(function (agent_index)
 
 	dofile "./game/global/log.lua"
 	_G.AGENT_INDEX = agent_index	-- 注入实例编号给 global.lua 使用
+
+	-- 持久化：定时器与模块存盘（CALLOUT 必须先于 MODULE_DB 装载，MODULE_DB 必须先于 CLSSAVE）
+	CALLOUT = Import("game/global/call_out.lua")
+	MODULE_DB = Import("game/global/module_db.lua")
+	CLSSAVE = Import("game/global/clssave.lua")
 
 	skynet.dispatch("lua", function (session, _, command, ...)
 		local f

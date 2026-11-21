@@ -101,7 +101,7 @@ if [ -z "$isExist" ]; then
 	echo "finish init crontab logrotate cmd!!!"
 fi
 
-## ------- 初始化/etc/hosts
-hostsFile=/etc/hosts
-ipAddr=`hostname -I`
-echo `cat $hostsFile | grep "$ipAddr" | grep `
+# ## ------- 初始化/etc/hosts
+# hostsFile=/etc/hosts
+# ipAddr=`hostname -I`
+# echo `cat $hostsFile | grep "$ipAddr" | grep -v "grep" `

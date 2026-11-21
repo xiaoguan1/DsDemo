@@ -11,7 +11,6 @@ local string = string
 local sformat = string.format
 
 local SELF_CLUSTERNAME = assert(SELF_CLUSTERNAME)
-local SERVER_CONFIG = SERVER_CONFIG
 local host_id = tonumber(assert(skynet.getenv("server_id")))
 local nodename = assert(skynet.getenv("node_name"))
 local cluster_no = tonumber(assert(skynet.getenv("cluster_no")))
@@ -228,15 +227,14 @@ function GetProxyByServiceName(serviceName, ...)
 		return
 	end
 
-	local namedData = BASIC_SERVICE_MAP[serviceName]
-	if namedData then
-		-- 基础设施服务，不支持跨节点通信
-		assert(namedData.named and clusterName == SELF_CLUSTERNAME)
+	local namedData = ALL_SERVICE_MAP[serviceName]
+	if namedData and namedData.unique then
+		-- 基础服务（全节点唯一），不支持跨节点通信
+		assert(clusterName == SELF_CLUSTERNAME)
 		return GetProxy(namedData.named, SELF_CLUSTERNAME, prototype)
 	end
 
-	-- 优先查找一般性服务，找不到再找adhoc服务
-	namedData = NORMAL_SERVICE_MAP[targetnode] and NORMAL_SERVICE_MAP[targetnode][serviceName]
+	-- 一般服务（全集群统一登记），找不到再找adhoc服务
 	if not namedData then
 		namedData = ADHOC_SERVICE_MAP[targetnode] and ADHOC_SERVICE_MAP[targetnode][serviceName]
 	end

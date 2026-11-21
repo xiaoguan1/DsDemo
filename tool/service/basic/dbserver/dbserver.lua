@@ -71,16 +71,20 @@ skynet.forward_type({[skynet.PTYPE_DB] = skynet.PTYPE_DB}, function ()
 	end
 	assert(#DBCELL_LIST == table.size(DBCELL_LIST))
 
-	skynet.dispatch("db", function (session, source, command, ...)
+	skynet.dispatch("db", function (session, source, command, eig, msg, sz)
 		-- 特别注意：这里如果将消息转发出去，必须手动的销毁释放消息数据包的内存！！！！
 		if not IS_OPEN then
 			-- 数据库服务已经执行关服dump处理了，还有其他服务发消息过来？？？？？
-			_ERROR_F()
+			_ERROR_F("dbserver closed, drop command:%s", tostring(command))
+			if msg then
+				skynet.trash(msg, sz)
+			end
+			return
 		end
 		if session == 0 then
-			ACCEPT.REDIRECT(session, source, command, ...)
+			ACCEPT.REDIRECT(session, source, command, eig, msg, sz)
 		else
-			RESPONSE.REDIRECT(session, source, command, ...)
+			RESPONSE.REDIRECT(session, source, command, eig, msg, sz)
 		end
 		skynet.ignoreret()
 	end)

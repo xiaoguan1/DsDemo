@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+package account;
+
+// 账号登录（出生校验）
+// 返回码：0成功 1需创角确认 2封禁 3出生节点不符 4登录过于频繁 5服务器满 6已取消 7系统错误 8参数错误
+message C2s_login{
+    required string phone = 1;
+}
+
+message S2c_login{
+    required uint32 code = 1;
+    optional string uid = 2;
+    optional uint32 server_id = 3;
+    optional string node_addr = 4;    // 出生节点地址（code=3 时下发）
+}
+
+// 创角确认：账号不存在时，客户端回复是否创建
+message C2s_create{
+    required string phone = 1;
+    required bool agree = 2;
+}
+
+// 创角结果（成功即视为登录成功，进入 socket 移交流程）
+message S2c_create{
+    required uint32 code = 1;
+    optional string uid = 2;
+    optional uint32 server_id = 3;
+    optional string node_addr = 4;
+}

@@ -17,7 +17,6 @@ local SERVER_CONFIG = assert(SERVER_CONFIG)
 local SELF_IPPORT = assert(SELF_IPPORT)
 local NODE_LIST = NODE_LIST
 local ADHOC_SERVICE_MAP = assert(ADHOC_SERVICE_MAP)
-local BASIC_SERVICE_MAP = assert(BASIC_SERVICE_MAP)
 local SERVICE_CLUSTERNAME = assert(SERVICE_CLUSTERNAME)
 local ALL_SERVICE_MAP = assert(ALL_SERVICE_MAP)
 
@@ -33,8 +32,7 @@ local function isVaildSvr(svr)
 	if not svr then
 		return
 	end
-	local mData = BASIC_SERVICE_MAP[svr] or ALL_SERVICE_MAP[svr]
-	-- 这里有问题，因为namedsvr.lua没有限制svr重名！！！
+	local mData = ALL_SERVICE_MAP[svr]
 	return mData and mData.named
 end
 
@@ -49,7 +47,6 @@ local function getClusterName(service, serverId)
 	if not service or not serverId then
 		return
 	end
-	print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
 	local sId2name = SERVICE_CLUSTERNAME[service]
 	if type(sId2name) == "table" then
 		return sId2name[serverId]
