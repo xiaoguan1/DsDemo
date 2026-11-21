@@ -4,10 +4,6 @@ local string = string
 local table = table
 local SERVICE_NAME = SERVICE_NAME
 
--- 先简单的挂在这里
-if not _G.GCLOSURE then
-	_G.GCLOSURE = Import("game/global/gclosure.lua")
-end
 local MCONSOLE = Import("game/service/manage/mconsole.lua")
 
 -- wget -q -O - "http://127.0.0.1:8888/pings"

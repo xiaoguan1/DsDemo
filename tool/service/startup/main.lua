@@ -2,14 +2,7 @@ local skynet = require "skynet"
 local host_id = tonumber(assert(skynet.getenv("server_id")))
 require "skynet.manager"
 local util = require "util.core"
-local posix = require "posix"
-local dpcluster = require "dpcluster.core"
-local queue = require "queueplus"
 local nodename = assert(skynet.getenv("node_name"))	-- 节点名即节点类型（user/play）
-CS = queue()
-
-local table = table
-local thas_value = table.has_value
 
 function abort(msg)
 	skynet.error(msg)
@@ -85,8 +78,8 @@ skynet.start(function ()
 
 	-- _OpenLogPath()
 
-	print("hostConfig ", tool.dumptree(hostConfig))
-	print("SERVER_CONFIG:", tool.dumptree(SERVER_CONFIG))
-	print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
+	-- print("hostConfig ", tool.dumptree(hostConfig))
+	-- print("SERVER_CONFIG:", tool.dumptree(SERVER_CONFIG))
+	-- print("SERVICE_CLUSTERNAME ", tool.dumptree(SERVICE_CLUSTERNAME))
 	_INFO_F("node[%s] server_id[%s] start ok", nodename, host_id)
 end)

@@ -11,10 +11,10 @@ ALL_SERVICE_MAP = {
 	["dbserver"] = {named = ".DBSERVER", unique = true},
 	["gcluster"] = {named = ".GCLUSTER", unique = true},
 	["manage"] = {named = ".MANAGE", unique = true},
-	["memserver"] = {named = ".MEMSERVER", unique = true},			-- 内存服务（玩法状态、实例注册表等）	
-	["wgate"] = {named = ".WGATE", default_cnt = 8},	-- 网关多实例：1 为登录网关，登录后按连接数分流
+	["memserver"] = {named = ".MEMSERVER", unique = true},		-- Redis 接入（玩法状态、实例注册表、排行榜等）
+	["wgate"] = {named = ".WGATE", default_cnt = 8},			-- 网关多实例：1 为登录网关，登录后按连接数分流
 	["agent"] = {named = ".AGENT", default_cnt = 8},
-	["example"] = {named = ".EXAMPLE"},						-- 玩法服务骨架（模板），可删除
+	["example"] = {named = ".EXAMPLE"},							-- 玩法服务骨架（模板），可删除
 }
 
 -- 节点名即是节点类型，取值固定；多个 play 进程共用节点名 play，
