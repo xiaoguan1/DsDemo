@@ -27,4 +27,5 @@ skynet.start(function (svr_index)
 
 	dofile "game/service/example/global.lua"
 	_INFO_F("example index:%s start ok, cluster:%s", svr_index, SELF_CLUSTERNAME)
+	_INFO_F("playdata demo usage: skynet.call('.EXAMPLE','lua','demo','uid1001','act1')")
 end)
