@@ -97,29 +97,27 @@ local function _Connect()
 end
 
 -- 统一命令执行：成功返回命令结果；失败返回 nil, err（不向调用方抛错）
--- redis 库约定：命令成功返回 (true, value)、命令错误返回 (false, errmsg)、连接错误抛异常
--- 由此：get/zscore 等未命中时 value 为 nil，本函数返回 nil（与故障的 nil, err 区分开）
+-- redis 库实际约定（socketchannel 每个请求只返回单值）：
+--   成功：直接返回结果值（状态串 "OK"/"PONG"、整数、bulk 串或数组；未命中为 nil）
+--   失败：redis 错误响应与连接错误都以异常抛出，统一由 pcall 捕获
+-- 注意：pcall 只有 isOk、result 两个有效返回，不要按 (ok, value) 解构
+-- 由此：get/zscore 等未命中时 result 为 nil，本函数返回 nil（与故障的 nil, err 区分开）
 local function _Exec(cmd, ...)
 	local c = _Connect()
 	if not c then
 		return nil, "redis unavailable"
 	end
-	local isOk, ok, value = pcall(c[cmd], c, ...)
+	local isOk, result = pcall(c[cmd], c, ...)
 	if not isOk then
 		-- 通信层失败进入冷却；Redis 命令错误（如 WRONGTYPE）不影响后续请求
-		if ok == SOCKET_ERROR then
+		if result == SOCKET_ERROR then
 			hasFailed = true
 			lastFailTime = skynet.now()
 		end
-		_LogFail(cmd, ok)
-		return nil, tostring(ok)
+		_LogFail(cmd, result)
+		return nil, tostring(result)
 	end
-	if ok == false then
-		-- redis 返回 '-' 错误响应，value 为错误信息
-		_LogFail(cmd, value)
-		return nil, tostring(value)
-	end
-	return value
+	return result
 end
 
 ---------------------- 通用操作封装 ----------------------

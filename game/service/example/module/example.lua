@@ -250,6 +250,8 @@ function Demo(uid, activityId)
 	report.config = { version = cfgVersion, data = cfg }
 
 	local activity, activityVersion = EnsureActivity(activityId)
+	print("activity ", tool.dumptree(activity))
+print("activityVersion ", activityVersion)
 	if not activity then
 		return nil, activityVersion
 	end

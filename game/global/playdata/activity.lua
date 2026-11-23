@@ -83,7 +83,6 @@ function Call_ActGet(game, activityId, ttl)
 		end
 		return nil, "source loading"
 	end
-
 	-- 抢到锁：回源 + 回填
 	local data, version = _LoadSource(key)
 	MEMCOMMON.Call_MemDel(lockKey)	-- 无论成败都释放单飞锁

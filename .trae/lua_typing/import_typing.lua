@@ -22,6 +22,16 @@ LuaLS 运行时插件（仅编辑器侧，不改动任何业务代码）
 ---@field finish integer 替换区间结束字节偏移（1-based，含）；小于 start 时表示在 start 处插入
 ---@field text string 用于替换或插入的新文本
 
+--- 去掉长括号字符串（[[...]] / [==[...]==]）与块注释（--[[...]]、--[==[...]==]），
+--- 避免把字符串/注释里的内容误当成真实代码（如 Redis 脚本里的顶格 "return 1"）
+---@param text string 文件全文
+---@return string 仅保留真实代码的文本（仅用于静态符号匹配，不参与 diff 字节偏移计算）
+local function stripLongBrackets(text)
+	local out = text:gsub("%-%-%[(=*)%[.-%]%1%]", "")
+	out = out:gsub("%[(=*)%[.-%]%1%]", "")
+	return out
+end
+
 --- 收集文件中导出的全局符号（非 local，去重保序）：全局函数 + 全局变量
 ---   - 全局函数：行首顶格的 `function Name(...)`
 ---   - 全局变量：行首顶格的 `Name = ...`（排除 local、字段赋值、==/>=/~= 比较）
@@ -35,8 +45,8 @@ local function collectGlobals(text)
 			list[#list + 1] = name
 		end
 	end
-	-- 归一化换行仅用于符号名匹配（不影响 diff 的字节偏移计算）
-	local src = "\n" .. (text:gsub("\r\n", "\n"))
+	-- 归一化换行 + 剔除长字符串/块注释，仅用于符号名匹配（不影响 diff 的字节偏移计算）
+	local src = "\n" .. stripLongBrackets(text:gsub("\r\n", "\n"))
 	for name in src:gmatch("\nfunction[ \t]+([%a_][%w_]*)") do
 		add(name)
 	end
@@ -47,10 +57,11 @@ local function collectGlobals(text)
 end
 
 --- 判断文件是否已存在顶层 return（有则不应再追加 return 表）
+--- 需先剔除长字符串/块注释，否则脚本字符串里的 "return" 会造成误判
 ---@param text string 文件全文
 ---@return boolean 是否已含顶层 return
 local function hasTopLevelReturn(text)
-	return ("\n" .. text):find("\nreturn%s") ~= nil
+	return ("\n" .. stripLongBrackets(text)):find("\nreturn%s") ~= nil
 end
 
 --- 由符号名列表生成 `return { a = a, b = b, ... }` 表体文本

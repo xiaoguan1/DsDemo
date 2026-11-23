@@ -27,7 +27,7 @@ do
 			break
 			;;
 		重置游戏数据库)
-			DbName=`cat ../config/main_node | grep -E '\"server[0-9]+\",?' | grep -oP '\s*dbname\s*=\s*"\Kserver[0-9]+'`
+			DbName=`cat ../config/main_node | grep -E '"server[0-9]+",?' | grep -oP '\s*dbname\s*=\s*"\Kserver[0-9]+'`
 			sh $gamedata $DbName
 			break
 			;;

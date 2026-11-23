@@ -16,7 +16,9 @@
 --------------------
 
 local PROXYSVR = Import("game/global/rpc/proxysvr.lua")
-local MEMSERVER = PROXYSVR.GetProxyByServiceName("memserver", "lua")
+local MEMSERVER = assert(PROXYSVR.GetProxyByServiceName("memserver", "lua"), "memserver service invalid")
+
+
 
 ---------------------- 键构造（统一前缀，避免散落硬编码） ----------------------
 
