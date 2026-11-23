@@ -1,0 +1,4 @@
+{
+    "runtime.plugin": ".trae/lua_typing/import_typing.lua",
+    "workspace.ignoreDir": [".trae"]
+}
