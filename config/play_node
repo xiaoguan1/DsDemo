@@ -87,6 +87,8 @@ redis_info = [[{
 	auth = "root",
 }]]
 
+dbcell_num = 4
+
 -- 一般服务（第4步起的玩法服务）是否启动由中心库 server_config 的 is_start_<服务名> 列决定，
 -- 实例数取 namedsvr.lua 中 ALL_SERVICE_MAP 的 default_cnt（缺省1）：
 -- 每个 play 节点只开一个玩法实例，靠增加 play 节点（N节点×1实例）弹性扩容

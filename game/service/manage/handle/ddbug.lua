@@ -162,7 +162,7 @@ end
 ----------------------------------------------------------------
 -- mem_common 封装测试：game/global/mem_common.lua
 -- 触发方式：wget -q -O - "http://127.0.0.1:40001/ddbug?case=mem"
--- 前置条件：本节点已启动 memserver（unique 基础服务）且 Redis 可用
+-- 前置条件：play 节点已启动 dbserver（内含 Redis）且 Redis 可用；user 节点会跳过
 -- 覆盖：键构造、KV、Hash、ZSet、eval、异步 Send、实例注册/心跳/发现/注销
 -- 结果全部打印在 manage 服务日志里：PASS/FAIL 逐项输出，最后汇总
 ----------------------------------------------------------------
@@ -190,6 +190,10 @@ local function _Dump(v)
 end
 
 local function _TestMemCommon()
+	if not IsPlay() then
+		return false, "skip: mem disabled on user node"
+	end
+
 	_PASS, _FAIL = 0, 0
 	local tag = string.format("%d_%d", os.time(), math.random(1000, 9999))
 	_Line("mem_common test start tag=" .. tag)
@@ -216,7 +220,7 @@ local function _TestMemCommon()
 	local v1 = MEM.Call_MemGet(kvKey)
 	_Check("Call_MemGet", v1 == "v1", v1)
 	local existsRet = MEM.Call_MemExists(kvKey)
-	_Check("Call_MemExists", existsRet == 1, existsRet)
+	_Check("Call_MemExists", existsRet == 1 or existsRet == true, existsRet)
 	local ttl = MEM.Call_MemTtl(kvKey)
 	_Check("Call_MemTtl", type(ttl) == "number" and ttl > 0, ttl)
 	local expireRet = MEM.Call_MemExpire(kvKey, 120)
@@ -366,7 +370,7 @@ end
 ----------------------------------------------------------------
 -- playdata 接入示例：调用 example 服务的 demo（设计 7.8/7.9）
 -- 触发：play 节点 wget -q -O - "http://127.0.0.1:40101/ddbug"
--- 前置：play 行 is_start_example=1，memserver/Redis 可用
+-- 前置：play 行 is_start_example=1，dbserver/Redis 可用
 -- 输出：配置 → 活动 → 加分（活动+档案）→ 排行榜 → 持久化积压
 ----------------------------------------------------------------
 local function _TestExamplePlayData()
@@ -374,10 +378,10 @@ local function _TestExamplePlayData()
 		return false, "skip: not play node"
 	end
 
-	local isOk, report = pcall(skynet.call, ".EXAMPLE", "lua", "demo", "ddbug_uid", "ddbug_act")
-	if not isOk then
-		_ERROR_F("[playdata] example demo fail: %s", tostring(report))
-		return false, report
+	local isOk, report, err = pcall(skynet.call, ".EXAMPLE", "lua", "demo", "ddbug_uid", "ddbug_act")
+	if not isOk or not report then
+		_ERROR_F("[playdata] example demo fail: %s", tostring(isOk and err or report))
+		return false, isOk and err or report
 	end
 	_INFO_F("[playdata] example demo ok: %s", _Dump(report))
 	return true, report

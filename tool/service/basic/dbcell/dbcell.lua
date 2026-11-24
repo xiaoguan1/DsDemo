@@ -22,6 +22,20 @@ _MergeCommand(RESPONSE, DBServer.RESPONSE)
 _MergeCommand(ACCEPT, DBCenter.ACCEPT)
 _MergeCommand(RESPONSE, DBCenter.RESPONSE)
 
+-- play 节点（配置了 redis_info）额外加载 Redis 能力与 playdata 服务端逻辑
+-- user 节点不加载：用户层不需要 Redis（设计决策）
+local memEnabled = (skynet.getenv("redis_info") ~= nil)
+local DBMem, PD
+if memEnabled then
+	DBMem = Import("tool/service/basic/dbcell/dbcell_mem.lua")
+	_MergeCommand(ACCEPT, DBMem.ACCEPT)
+	_MergeCommand(RESPONSE, DBMem.RESPONSE)
+
+	PD = Import("game/global/playdata/server.lua")
+	_MergeCommand(ACCEPT, PD.ACCEPT)
+	_MergeCommand(RESPONSE, PD.RESPONSE)
+end
+
 -- 心跳方法
 local HbTime = 1 * 100
 function Heartbeat()
@@ -31,6 +45,9 @@ function Heartbeat()
 		if ntime % 60 == 0 then
 			DBServer.CheckDb()	-- 连接保活：ping 失败则丢弃连接，下次查询自动重连
 			DBCenter.CheckDb()
+			if DBMem then
+				DBMem.CheckMem()	-- Redis 保活
+			end
 		end
 	end
 end
@@ -39,6 +56,12 @@ skynet.start(function ()
 	dofile "./game/global/log.lua"
 	dofile "game/global/dblog.lua"
 	skynet.register(".DBCELL_" .. no)
+
+	-- playdata 持久化消费者：每个 cell 消费全局队列，写本 cell 的 MySQL
+	if PD then
+		PD.Init(no)
+		PD.StartConsumer()
+	end
 
 	skynet.dispatch("lua", function (session, source, command, ...)
 		if session == 0 then

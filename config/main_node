@@ -73,15 +73,9 @@ mongo_log_db = [[{
 	dbname = "server55001",
 }]]
 
-redis_info = [[{
-	host = "127.0.0.1",
-	port = 6379,
-	db = 0,
-	auth = "root",
-}]]
+-- user 节点不提供 Redis 能力；playdata 热层只在 play 节点（dbserver 合并了 Redis）
 
-
-dbcell_num = 3
+dbcell_num = 4
 
 ------------------ 日志 ------------------
 log_stdin = true		-- true:控制台打印日志

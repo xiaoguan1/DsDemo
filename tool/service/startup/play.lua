@@ -1,5 +1,5 @@
 -- play 节点启动入口（玩法节点：无状态玩法实例池，N节点×1实例）
--- 与 user 节点的差异：无 dbserver（玩法不直接读写 MySQL）、新增 redis、无客户端监听
+-- 与 user 节点的差异：dbserver 同时具备 Redis 能力（读缓存未命中直接查 database_info）、无客户端监听
 -- 进程差异全部来自配置与环境变量（SERVER_ID/MCS_PORT），节点名固定为 play
 
 local skynet = require "skynet"
@@ -39,7 +39,7 @@ skynet.start(function ()
 
 	local startOrder = assert(NODE_START_SERVICE[PLAY_NODE], "unknown node: " .. PLAY_NODE)
 
-	-- 基础服务（按节点名在代码内固定）：manage → protosvr → gamelog → stimer → gcluster → redis
+	-- 基础服务（按节点名在代码内固定）：manage → protosvr → gamelog → stimer → dbserver → gcluster
 	for _, svrname in ipairs(startOrder.unique) do
 		local isOk, id = pcall(skynet.uniqueservice, svrname)
 		if not isOk or not id then

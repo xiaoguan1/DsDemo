@@ -42,11 +42,10 @@ local skynet = {
 	PTYPE_LUA = 10,
 	PTYPE_SNAX = 11,
 	PTYPE_TRACE = 12,	-- use for debug trace
-	PTYPE_UPDATE = 13,	-- by GGW
-	PTYPE_RPC = 14,		-- by GGW
-	PTYPE_CALLOUT = 15,	-- by GGW
-	PTYPE_TRANS = 16,	-- by GGW
-	PTYPE_DB = 17,		-- by GGW
+	PTYPE_RPC = 13,		-- by GGW
+	PTYPE_CALLOUT = 14,	-- by GGW
+	PTYPE_DB = 15,		-- by GGW
+	PTYPE_MEM = 16,		-- by GGW
 }
 
 function skynet.get_prototype_id(key)

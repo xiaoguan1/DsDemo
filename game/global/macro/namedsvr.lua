@@ -11,7 +11,6 @@ ALL_SERVICE_MAP = {
 	["dbserver"] = {named = ".DBSERVER", unique = true},
 	["gcluster"] = {named = ".GCLUSTER", unique = true},
 	["manage"] = {named = ".MANAGE", unique = true},
-	["memserver"] = {named = ".MEMSERVER", unique = true},		-- Redis 接入（玩法状态、实例注册表、排行榜等）
 	["wgate"] = {named = ".WGATE", default_cnt = 8},			-- 网关多实例：1 为登录网关，登录后按连接数分流
 	["agent"] = {named = ".AGENT", default_cnt = 8},
 	["example"] = {named = ".EXAMPLE"},							-- 玩法服务骨架（模板），可删除
@@ -38,7 +37,6 @@ START_USER_SERVICE = {
 		"gamelog",
 		"stimer",
 		"dbserver",
-		"memserver",
 		"gcluster"
 	},
 
@@ -50,7 +48,8 @@ START_USER_SERVICE = {
 }
 
 --[[ play节点的启动服务顺序表 ]]
--- 与user的差异：无dbserver（玩法不直接读写MySQL，玩家数据经agent、玩法数据走memserver）；新增memserver
+-- 与 user 的差异：dbserver 额外具备 Redis 能力（play 节点配置了 redis_info），
+-- 读缓存未命中时直接查本节点 database_info；user 节点不加载 Redis
 START_PLAY_SERVICE = {
 	-- 基础服务设施
 	unique = {
@@ -58,9 +57,8 @@ START_PLAY_SERVICE = {
 		"protosvr",
 		"gamelog",
 		"stimer",
-		-- "dbserver",
+		"dbserver",		-- MySQL + Redis（playdata 读穿透/CAS/持久化）
 		"gcluster",
-		"memserver",		-- 玩法状态与实例注册表的存储，必须先于玩法实例就绪
 	},
 
 	-- 一般服务白名单（是否启动由 is_start_<服务名> 列决定，实例数取 default_cnt）

@@ -206,3 +206,38 @@ function RESPONSE.modsave_replace(saveName, saveData)
 	end
 	return true
 end
+
+-- 严格读取：区分"无记录"与"SQL 故障"，供 playdata 缓存回源使用
+-- 返回：data 字符串, nil（成功）/ nil, nil（确定无记录）/ nil, err（源故障）
+function GetModDataStrict(saveName)
+	if not saveName then
+		return nil, "invalid saveName"
+	end
+	local sql = sformat("select data from module where mod_name = %s;",
+							mquote_sql_str(saveName))
+	local result = _Query(saveName, sql)
+	if not result then
+		return nil, "query fail"
+	end
+	if result.badresult then
+		return nil, tostring(result.badresult)
+	end
+	if table.empty(result) then
+		return nil, nil
+	end
+	return result[1].data, nil
+end
+
+-- 保存 payload 字符串（内部完成 tool.serialise + SQL 引号），供持久化消费使用
+function SaveModData(saveName, payload)
+	if not saveName or not payload then
+		return false
+	end
+	local salData = mquote_sql_str(tool.serialise(payload))
+	local result = _Query(saveName, _UpsertSql(saveName, salData))
+	if not result or result.badresult then
+		_ERROR_F("saveName:%s result:%s", saveName, tool.dumptree(result))
+		return false
+	end
+	return true
+end
