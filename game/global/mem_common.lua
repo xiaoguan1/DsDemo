@@ -25,6 +25,11 @@ skynet.register_protocol({
 
 local DBSERVER = assert(PROXYSVR.GetProxyByServiceName("dbserver", "mem"), "dbserver service invalid")
 
+-- 供 playdata/client.lua 复用同一个 mem 协议代理，避免重复创建
+function GetMemProxy()
+	return DBSERVER
+end
+
 ---------------------- 键构造（统一前缀，避免散落硬编码） ----------------------
 
 function MemKeyProfile(uid)

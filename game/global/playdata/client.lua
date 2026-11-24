@@ -4,12 +4,9 @@
 -- 返回结构：{ code = "ok"|"not_found"|"conflict"|"source_error"|"redis_error", ... }
 --------------------
 
-local skynet = require "skynet"
-local PROXYSVR = Import("game/global/rpc/proxysvr.lua")
-
--- 复用 mem_common 的协议注册，并取得 mem 协议代理
-Import("game/global/mem_common.lua")
-local DBSERVER = assert(PROXYSVR.GetProxyByServiceName("dbserver", "mem"), "dbserver service invalid")
+-- 复用 mem_common 的协议注册与代理，避免重复创建
+local MEMCOMMON = Import("game/global/mem_common.lua")
+local DBSERVER = assert(MEMCOMMON.GetMemProxy(), "dbserver service invalid")
 
 -- 统一调用：服务/命令异常转为结构化错误，避免把调用方协程打挂
 local function _Call(cmd, ...)

@@ -11,11 +11,6 @@ local pcall = pcall
 local sfind = string.find
 local ssub = string.sub
 
--- 序列化任意 Lua 值
-function PD_Pack(value)
-	return tool.serialise(value)
-end
-
 -- 反序列化；失败返回 nil（load 只编译不执行，必须再调用 chunk）
 function PD_Unpack(payload)
 	if type(payload) ~= "string" or payload == "" then

@@ -20,6 +20,7 @@ local tostring = tostring
 local tonumber = tonumber
 local type = type
 local ostime = os.time
+local tserialise = tool.serialise	-- 序列化任意 Lua 值
 
 local CODEC = Import("tool/service/basic/dbcell/playdata_codec.lua")
 local DBMEM = Import("tool/service/basic/dbcell/dbcell_mem.lua")
@@ -158,7 +159,7 @@ function Cas(key, version, data, ttl)
 	assert(key and type(version) == "number" and type(data) == "table")
 	ttl = ttl or DEFAULT_TTL
 	local payload = CODEC.PD_Encode(version + 1, data)
-	local task = CODEC.PD_Pack({
+	local task = tserialise({
 		saveName = key,
 		version = version + 1,
 		data = data,
@@ -504,9 +505,9 @@ local function _RequeueOrDead(task)
 	end
 	t.retry = (t.retry or 0) + 1
 	if t.retry > MAX_RETRY then
-		DBMEM.Exec("rpush", DEAD_KEY, CODEC.PD_Pack(t))
+		DBMEM.Exec("rpush", DEAD_KEY, tserialise(t))
 	else
-		DBMEM.Exec("rpush", QUEUE_KEY, CODEC.PD_Pack(t))
+		DBMEM.Exec("rpush", QUEUE_KEY, tserialise(t))
 	end
 end
 
